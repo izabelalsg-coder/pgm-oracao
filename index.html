@@ -1,347 +1,459 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>PGM - Pedidos de Oração</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Lora:wght@400;600&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Lora:wght@400;600&display=swap" rel="stylesheet"/>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    body { background: #F0F7FF; }
+    body { background: #F0F7FF; font-family: 'Lora', Georgia, serif; }
     ::-webkit-scrollbar { width: 0; }
     @keyframes slideUp { from { transform: translateY(100%); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
     @keyframes fadeIn  { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes spin    { to { transform: rotate(360deg); } }
     .fade { animation: fadeIn 0.3s ease; }
     .chip:hover { filter: brightness(0.95); }
-    .btn:active { transform: scale(0.96); }
+    .btn-press:active { transform: scale(0.97); }
+    input, textarea { font-family: 'Lora', Georgia, serif; }
   </style>
 </head>
 <body>
-  <div id="root"></div>
+<div id="root"></div>
 
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
 
-  <script type="text/babel">
-    const { useState, useEffect, useCallback } = React;
+<script type="text/babel">
+const { useState, useEffect, useCallback, useRef } = React;
 
-    // ── SUPABASE ─────────────────────────────────────────────────────────────
-    const SUPABASE_URL = "https://mlznzzskyqagriojsxmw.supabase.co";
-    const ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1sem56enNreXFhZ3Jpb2pzeG13Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ5ODcwMDQsImV4cCI6MjA5MDU2MzAwNH0.0Ah-fsxfn_SjAj-KRWoYOJ75NODwoJHc1-VPBSZ7u60";
+// ── CONFIG ────────────────────────────────────────────────────────────────────
+const URL_  = "https://mlznzzskyqagriojsxmw.supabase.co";
+const ANON  = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1sem56enNreXFhZ3Jpb2pzeG13Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ5ODcwMDQsImV4cCI6MjA5MDU2MzAwNH0.0Ah-fsxfn_SjAj-KRWoYOJ75NODwoJHc1-VPBSZ7u60";
 
-    const H = {
-      "apikey": ANON_KEY,
-      "Authorization": `Bearer ${ANON_KEY}`,
-      "Content-Type": "application/json",
-      "Prefer": "return=representation",
-    };
+function hdrs(token) {
+  return {
+    "apikey": ANON,
+    "Authorization": `Bearer ${token || ANON}`,
+    "Content-Type": "application/json",
+    "Prefer": "return=representation",
+  };
+}
 
-    async function db(method, table, params = "", body = null) {
-      const res = await fetch(`${SUPABASE_URL}/rest/v1/${table}${params}`, {
-        method, headers: H, body: body ? JSON.stringify(body) : undefined,
-      });
-      if (!res.ok) throw new Error(await res.text());
-      const text = await res.text();
-      return text ? JSON.parse(text) : [];
+async function api(method, path, body, token) {
+  const res = await fetch(`${URL_}${path}`, {
+    method, headers: hdrs(token), body: body ? JSON.stringify(body) : undefined,
+  });
+  if (!res.ok) { const t = await res.text(); throw new Error(t); }
+  const t = await res.text(); return t ? JSON.parse(t) : [];
+}
+
+// Auth
+const authSignup = (email, pw) => api("POST", "/auth/v1/signup", { email, password: pw });
+const authLogin  = (email, pw) => api("POST", "/auth/v1/token?grant_type=password", { email, password: pw });
+const authLogout = (token)     => api("POST", "/auth/v1/logout", {}, token);
+
+// DB
+const dbGet   = (t, p, tk)     => api("GET",    `/rest/v1/${t}${p}`, null, tk);
+const dbPost  = (t, b, tk)     => api("POST",   `/rest/v1/${t}`, b, tk);
+const dbPatch = (t, id, b, tk) => api("PATCH",  `/rest/v1/${t}?id=eq.${id}`, b, tk);
+const dbDel   = (t, p, tk)     => api("DELETE",  `/rest/v1/${t}${p}`, null, tk);
+
+// ── CORES ─────────────────────────────────────────────────────────────────────
+const C = {
+  bg: "#F0F7FF", card: "#F7FBFF", border: "#BDD8F5",
+  blue: "#3A86C8", blueLight: "#D6EAFA", text: "#1A3550",
+  muted: "#5A89AA", answered: "#2E7D52", answeredBg: "#E6F4ED",
+  error: "#C0392B", errorBg: "#FDECEA",
+};
+
+const s = {
+  app:      { minHeight:"100vh", background:"radial-gradient(ellipse at 60% 0%,#D6EAFA,#F0F7FF 60%,#E2F0FB)", color:C.text, paddingBottom:80 },
+  header:   { background:"linear-gradient(135deg,#1A3550,#2E6EA6)", color:"#EFF8FF", padding:"28px 20px 18px", textAlign:"center", position:"sticky", top:0, zIndex:10, boxShadow:"0 4px 24px rgba(26,53,80,.2)" },
+  htitle:   { fontSize:22, fontWeight:700, fontFamily:"'Playfair Display',Georgia,serif", letterSpacing:".03em" },
+  hsub:     { fontSize:12, opacity:.65, marginTop:4, letterSpacing:".08em" },
+  section:  { padding:"18px 16px 0" },
+  label:    { fontSize:11, fontWeight:700, letterSpacing:".14em", textTransform:"uppercase", color:C.muted, marginBottom:10, display:"block" },
+  card:     { background:C.card, border:`1.5px solid ${C.border}`, borderRadius:16, padding:"14px 16px", marginBottom:10, boxShadow:"0 2px 12px rgba(80,140,200,.07)" },
+  chip:     { display:"inline-flex", alignItems:"center", gap:8, background:C.blueLight, border:`1.5px solid ${C.border}`, borderRadius:40, padding:"8px 14px 8px 10px", cursor:"pointer", fontSize:14, fontWeight:600, margin:3 },
+  btn:      { background:"linear-gradient(135deg,#3A86C8,#6DB3E8)", color:"#fff", border:"none", borderRadius:40, padding:"12px 24px", fontSize:15, fontWeight:700, cursor:"pointer", boxShadow:"0 2px 10px rgba(58,134,200,.3)", width:"100%", display:"block" },
+  btnSm:    { background:"linear-gradient(135deg,#3A86C8,#6DB3E8)", color:"#fff", border:"none", borderRadius:40, padding:"10px 22px", fontSize:14, fontWeight:700, cursor:"pointer", boxShadow:"0 2px 10px rgba(58,134,200,.25)" },
+  ghost:    { background:"transparent", border:`1.5px solid ${C.border}`, color:C.muted, borderRadius:40, padding:"8px 14px", fontSize:13, fontWeight:600, cursor:"pointer" },
+  answBtn:  { background:C.answeredBg, border:`1.5px solid ${C.answered}`, color:C.answered, borderRadius:40, padding:"7px 14px", fontSize:13, fontWeight:700, cursor:"pointer" },
+  input:    { width:"100%", background:"#F0F8FF", border:`1.5px solid ${C.border}`, borderRadius:12, padding:"12px 14px", fontSize:15, color:C.text, outline:"none", marginBottom:10, display:"block" },
+  textarea: { width:"100%", background:"#F0F8FF", border:`1.5px solid ${C.border}`, borderRadius:12, padding:"12px 14px", fontSize:15, color:C.text, outline:"none", minHeight:80, resize:"vertical", display:"block" },
+  modal:    { position:"fixed", inset:0, background:"rgba(10,30,60,.45)", zIndex:100, display:"flex", alignItems:"flex-end", justifyContent:"center" },
+  modalBox: { background:C.card, borderRadius:"20px 20px 0 0", padding:"24px 20px 40px", width:"100%", maxWidth:480, boxShadow:"0 -8px 40px rgba(26,53,80,.18)", animation:"slideUp .25s ease" },
+  mTitle:   { fontFamily:"'Playfair Display',Georgia,serif", fontSize:20, fontWeight:700, marginBottom:14, color:C.text, display:"block" },
+  divider:  { border:"none", borderTop:`1px solid ${C.border}`, margin:"12px 0" },
+  answTag:  { display:"inline-block", background:C.answeredBg, borderRadius:20, padding:"2px 9px", fontSize:12, fontWeight:700, color:C.answered },
+  emojiGrid:{ display:"grid", gridTemplateColumns:"repeat(6,1fr)", gap:8, marginBottom:14 },
+  errBox:   { background:C.errorBg, border:`1px solid #F1B0A8`, borderRadius:10, padding:"10px 14px", fontSize:13, color:C.error, marginBottom:10 },
+  tab:      { flex:1, padding:"10px 0", border:"none", background:"transparent", fontSize:14, fontWeight:600, cursor:"pointer", borderBottom:`2px solid transparent`, color:C.muted },
+  tabAct:   { borderBottom:`2px solid ${C.blue}`, color:C.blue },
+};
+
+const EMOJIS = ["🙏","✨","🌿","🕊️","💛","🌸","🌻","🦋","🌙","⭐","🫶","💫"];
+
+function timeAgo(ts) {
+  const m = Math.floor((Date.now() - new Date(ts)) / 60000);
+  if (m < 1) return "agora";
+  if (m < 60) return `${m}min atrás`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `${h}h atrás`;
+  return `${Math.floor(h/24)}d atrás`;
+}
+
+function Spinner() {
+  return <div style={{ width:20, height:20, border:`2px solid rgba(255,255,255,.3)`, borderTop:"2px solid #fff", borderRadius:"50%", animation:"spin .7s linear infinite", display:"inline-block" }} />;
+}
+
+// ── TELA DE LOGIN ─────────────────────────────────────────────────────────────
+function AuthScreen({ onAuth }) {
+  const [tab,     setTab]     = useState("login");
+  const [email,   setEmail]   = useState("");
+  const [pw,      setPw]      = useState("");
+  const [name,    setName]    = useState("");
+  const [emoji,   setEmoji]   = useState("🙏");
+  const [loading, setLoading] = useState(false);
+  const [err,     setErr]     = useState("");
+
+  async function handleLogin() {
+    if (!email || !pw) { setErr("Preencha e-mail e senha."); return; }
+    setLoading(true); setErr("");
+    try {
+      const data = await authLogin(email, pw);
+      if (!data.access_token) throw new Error("Login inválido.");
+      // buscar membro vinculado
+      const members = await dbGet("pgm_members", `?user_id=eq.${data.user.id}&select=*`, data.access_token);
+      const member  = members[0] || null;
+      onAuth({ token: data.access_token, refresh: data.refresh_token, user: data.user, member });
+    } catch (e) {
+      setErr("E-mail ou senha incorretos.");
     }
-    const dbGet   = (t, p)     => db("GET",    t, p);
-    const dbPost  = (t, b)     => db("POST",   t, "", b);
-    const dbPatch = (t, id, b) => db("PATCH",  t, `?id=eq.${id}`, b);
-    const dbDel   = (t, p)     => db("DELETE", t, p);
+    setLoading(false);
+  }
 
-    // ── CORES / ESTILOS ───────────────────────────────────────────────────────
-    const C = {
-      bg: "#F0F7FF", card: "#F7FBFF", border: "#BDD8F5",
-      gold: "#3A86C8", goldLight: "#D6EAFA", text: "#1A3550",
-      muted: "#5A89AA", answered: "#2E7D52", answeredBg: "#E6F4ED",
-    };
-    const s = {
-      app:        { minHeight:"100vh", background:"radial-gradient(ellipse at 60% 0%,#D6EAFA,#F0F7FF 60%,#E2F0FB)", fontFamily:"'Lora',Georgia,serif", color:C.text, paddingBottom:80 },
-      header:     { background:"linear-gradient(135deg,#1A3550,#2E6EA6)", color:"#FFF8EC", padding:"28px 20px 18px", textAlign:"center", position:"sticky", top:0, zIndex:10, boxShadow:"0 4px 24px rgba(26,53,80,.2)" },
-      title:      { fontSize:22, fontWeight:700, fontFamily:"'Playfair Display',Georgia,serif", letterSpacing:".03em" },
-      sub:        { fontSize:12, opacity:.65, marginTop:4, letterSpacing:".08em" },
-      section:    { padding:"18px 16px 0" },
-      label:      { fontSize:11, fontWeight:700, letterSpacing:".14em", textTransform:"uppercase", color:C.muted, marginBottom:10, display:"block" },
-      card:       { background:C.card, border:`1.5px solid ${C.border}`, borderRadius:16, padding:"14px 16px", marginBottom:10, boxShadow:"0 2px 12px rgba(80,140,200,.07)" },
-      chip:       { display:"inline-flex", alignItems:"center", gap:8, background:C.goldLight, border:`1.5px solid ${C.border}`, borderRadius:40, padding:"8px 14px 8px 10px", cursor:"pointer", fontSize:14, fontWeight:600, margin:3 },
-      activeChip: { background:"linear-gradient(135deg,#3A86C8,#6DB3E8)", color:"#fff", border:"1.5px solid #C9972A", boxShadow:"0 2px 10px rgba(58,134,200,.3)" },
-      btn:        { background:"linear-gradient(135deg,#3A86C8,#6DB3E8)", color:"#fff", border:"none", borderRadius:40, padding:"10px 22px", fontSize:14, fontWeight:700, cursor:"pointer", boxShadow:"0 2px 10px rgba(58,134,200,.25)" },
-      ghost:      { background:"transparent", border:`1.5px solid ${C.border}`, color:C.muted, borderRadius:40, padding:"8px 14px", fontSize:13, fontWeight:600, cursor:"pointer" },
-      answeredBtn:{ background:C.answeredBg, border:`1.5px solid ${C.answered}`, color:C.answered, borderRadius:40, padding:"7px 14px", fontSize:13, fontWeight:700, cursor:"pointer" },
-      input:      { width:"100%", background:"#FFFDF8", border:`1.5px solid ${C.border}`, borderRadius:12, padding:"11px 13px", fontSize:15, color:C.text, fontFamily:"'Lora',Georgia,serif", outline:"none", marginBottom:8, display:"block" },
-      textarea:   { width:"100%", background:"#FFFDF8", border:`1.5px solid ${C.border}`, borderRadius:12, padding:"11px 13px", fontSize:15, color:C.text, fontFamily:"'Lora',Georgia,serif", outline:"none", minHeight:80, resize:"vertical", display:"block" },
-      modal:      { position:"fixed", inset:0, background:"rgba(10,30,60,.45)", zIndex:100, display:"flex", alignItems:"flex-end", justifyContent:"center" },
-      modalBox:   { background:C.card, borderRadius:"20px 20px 0 0", padding:"24px 20px 40px", width:"100%", maxWidth:480, boxShadow:"0 -8px 40px rgba(26,53,80,.18)", animation:"slideUp .25s ease" },
-      modalTitle: { fontFamily:"'Playfair Display',Georgia,serif", fontSize:20, fontWeight:700, marginBottom:14, color:C.text, display:"block" },
-      divider:    { border:"none", borderTop:`1px solid ${C.border}`, margin:"12px 0" },
-      answeredTag:{ display:"inline-block", background:C.answeredBg, borderRadius:20, padding:"2px 9px", fontSize:12, fontWeight:700, color:C.answered },
-      emojiGrid:  { display:"grid", gridTemplateColumns:"repeat(6,1fr)", gap:8, marginBottom:14 },
-    };
-
-    const EMOJIS = ["🙏","✨","🌿","🕊️","💛","🌸","🌻","🦋","🌙","⭐","🫶","💫"];
-
-    function timeAgo(ts) {
-      const m = Math.floor((Date.now() - new Date(ts)) / 60000);
-      if (m < 1) return "agora";
-      if (m < 60) return `${m}min atrás`;
-      const h = Math.floor(m / 60);
-      if (h < 24) return `${h}h atrás`;
-      return `${Math.floor(h/24)}d atrás`;
-    }
-
-    // ── APP ───────────────────────────────────────────────────────────────────
-    function PGM() {
-      const [members,  setMembers]  = useState([]);
-      const [requests, setRequests] = useState([]);
-      const [intercs,  setIntercs]  = useState([]);
-      const [me,       setMe]       = useState(null);
-      const [modal,    setModal]    = useState(null);
-      const [loading,  setLoading]  = useState(true);
-      const [saving,   setSaving]   = useState(false);
-      const [filter,   setFilter]   = useState("all");
-      const [newName,  setNewName]  = useState("");
-      const [newEmoji, setNewEmoji] = useState("🙏");
-      const [reqTitle, setReqTitle] = useState("");
-      const [reqBody,  setReqBody]  = useState("");
-      const [error,    setError]    = useState(null);
-
-      const fetchAll = useCallback(async () => {
-        try {
-          const [m, r, i] = await Promise.all([
-            dbGet("pgm_members",       "?order=joined_at.asc&select=*"),
-            dbGet("pgm_requests",      "?order=created_at.desc&select=*"),
-            dbGet("pgm_intercessions", "?select=*"),
-          ]);
-          setMembers(m); setRequests(r); setIntercs(i); setError(null);
-        } catch {
-          setError("Erro de conexão com o banco de dados.");
-        } finally { setLoading(false); }
-      }, []);
-
-      useEffect(() => { fetchAll(); }, []);
-      useEffect(() => { const t = setInterval(fetchAll, 30000); return () => clearInterval(t); }, []);
-
-      async function addMember() {
-        if (!newName.trim()) return;
-        setSaving(true);
-        try {
-          const [m] = await dbPost("pgm_members", { name: newName.trim(), emoji: newEmoji });
-          setMembers(p => [...p, m]); setMe(m);
-          setNewName(""); setNewEmoji("🙏"); setModal(null);
-        } catch { setError("Erro ao salvar membro."); }
-        setSaving(false);
+  async function handleSignup() {
+    if (!email || !pw || !name.trim()) { setErr("Preencha todos os campos."); return; }
+    if (pw.length < 6) { setErr("A senha deve ter ao menos 6 caracteres."); return; }
+    setLoading(true); setErr("");
+    try {
+      const data = await authSignup(email, pw);
+      if (!data.access_token) {
+        setErr("Cadastro realizado! Verifique seu e-mail para confirmar, depois faça login.");
+        setLoading(false); return;
       }
-
-      async function addRequest() {
-        if (!reqTitle.trim() || !me) return;
-        setSaving(true);
-        try {
-          const [r] = await dbPost("pgm_requests", { member_id: me.id, title: reqTitle.trim(), body: reqBody.trim() || null });
-          setRequests(p => [r, ...p]);
-          setReqTitle(""); setReqBody(""); setModal(null);
-        } catch { setError("Erro ao salvar pedido."); }
-        setSaving(false);
-      }
-
-      async function togglePray(requestId) {
-        if (!me) return;
-        const existing = intercs.find(i => i.request_id === requestId && i.member_id === me.id);
-        if (existing) {
-          setIntercs(p => p.filter(i => i.id !== existing.id));
-          await dbDel("pgm_intercessions", `?id=eq.${existing.id}`);
-        } else {
-          const [i] = await dbPost("pgm_intercessions", { request_id: requestId, member_id: me.id });
-          setIntercs(p => [...p, i]);
-        }
-      }
-
-      async function toggleAnswered(req) {
-        const val = { answered: !req.answered };
-        setRequests(p => p.map(r => r.id === req.id ? { ...r, ...val } : r));
-        await dbPatch("pgm_requests", req.id, val);
-      }
-
-      async function deleteRequest(id) {
-        setRequests(p => p.filter(r => r.id !== id));
-        setIntercs(p => p.filter(i => i.request_id !== id));
-        await dbDel("pgm_requests", `?id=eq.${id}`);
-      }
-
-      const member   = id => members.find(m => m.id === id);
-      const filtered = requests.filter(r =>
-        filter === "mine"     ? r.member_id === me?.id :
-        filter === "answered" ? r.answered : true
+      // criar perfil de membro
+      const [member] = await dbPost("pgm_members",
+        { name: name.trim(), emoji, user_id: data.user.id },
+        data.access_token
       );
+      onAuth({ token: data.access_token, refresh: data.refresh_token, user: data.user, member });
+    } catch (e) {
+      const msg = e.message || "";
+      if (msg.includes("already registered")) setErr("Este e-mail já está cadastrado. Faça login.");
+      else setErr("Erro ao cadastrar. Tente novamente.");
+    }
+    setLoading(false);
+  }
 
-      if (loading) return (
-        <div style={{ ...s.app, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:12 }}>
-          <div style={{ fontSize:48 }}>🕊️</div>
-          <p style={{ color:C.muted, fontSize:14 }}>Carregando...</p>
+  return (
+    <div style={{ ...s.app, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", padding:"24px 16px" }}>
+      <div style={{ width:"100%", maxWidth:400 }}>
+        {/* Logo */}
+        <div style={{ textAlign:"center", marginBottom:32 }}>
+          <div style={{ fontSize:52, marginBottom:8 }}>🕊️</div>
+          <h1 style={{ fontFamily:"'Playfair Display',Georgia,serif", fontSize:26, color:C.text, fontWeight:700 }}>PGM</h1>
+          <p style={{ color:C.muted, fontSize:14, marginTop:4 }}>Pedidos de Oração</p>
         </div>
-      );
 
-      return (
-        <div style={s.app}>
-          {/* Header */}
-          <div style={s.header}>
-            <p style={s.title}>🕊️ PGM - Pedidos de Oração</p>
-            <p style={s.sub}>
-              {members.length} membros · {requests.filter(r=>!r.answered).length} pedidos ativos · {intercs.length} intercesões
-            </p>
-            {me && (
-              <div style={{ marginTop:10, display:"inline-flex", alignItems:"center", gap:8, background:"rgba(255,255,255,0.12)", borderRadius:40, padding:"5px 14px 5px 10px" }}>
-                <span style={{ fontSize:17 }}>{me.emoji}</span>
-                <span style={{ fontSize:13, fontWeight:600 }}>{me.name}</span>
-                <button onClick={() => setMe(null)} style={{ background:"transparent", border:"none", color:"#fff", opacity:.7, cursor:"pointer", fontSize:18, padding:0, marginLeft:4 }}>×</button>
-              </div>
-            )}
+        {/* Card */}
+        <div style={{ ...s.card, padding:"24px 20px 28px" }}>
+          {/* Tabs */}
+          <div style={{ display:"flex", borderBottom:`1px solid ${C.border}`, marginBottom:20 }}>
+            <button style={{ ...s.tab, ...(tab==="login" ? s.tabAct : {}) }} onClick={() => { setTab("login"); setErr(""); }}>Entrar</button>
+            <button style={{ ...s.tab, ...(tab==="signup" ? s.tabAct : {}) }} onClick={() => { setTab("signup"); setErr(""); }}>Cadastrar</button>
           </div>
 
-          {error && (
-            <div style={{ background:"#FEE", border:"1px solid #FCC", padding:"10px 16px", margin:"12px 16px 0", borderRadius:10, fontSize:13, color:"#900" }}>
-              ⚠️ {error}
-            </div>
-          )}
+          {err && <div style={s.errBox}>⚠️ {err}</div>}
 
-          {/* Membros */}
-          <div style={s.section}>
-            <span style={s.label}>👥 Membros</span>
-            <div style={{ display:"flex", flexWrap:"wrap" }}>
-              {members.map(m => (
-                <div key={m.id} className="chip"
-                  style={{ ...s.chip, ...(me?.id === m.id ? s.activeChip : {}) }}
-                  onClick={() => setMe(me?.id === m.id ? null : m)}>
-                  <span style={{ fontSize:18 }}>{m.emoji}</span>
-                  <span>{m.name}</span>
-                </div>
+          {tab === "signup" && <>
+            <span style={{ ...s.label, marginBottom:8 }}>Escolha seu emoji</span>
+            <div style={s.emojiGrid}>
+              {EMOJIS.map(e => (
+                <button key={e} onClick={() => setEmoji(e)} style={{
+                  fontSize:22, background:emoji===e?"#E0F0FF":C.blueLight,
+                  border:`2px solid ${emoji===e?C.blue:"transparent"}`,
+                  borderRadius:12, padding:"6px 0", cursor:"pointer"
+                }}>{e}</button>
               ))}
-              <div className="chip"
-                style={{ ...s.chip, background:"transparent", border:`1.5px dashed ${C.border}`, color:C.muted }}
-                onClick={() => setModal("member")}>
-                + Entrar no grupo
-              </div>
             </div>
-          </div>
+            <input style={s.input} placeholder="Seu nome no grupo..." value={name}
+              onChange={e => setName(e.target.value)} />
+          </>}
 
-          {/* Filtros */}
-          <div style={{ ...s.section, display:"flex", alignItems:"center", justifyContent:"space-between", flexWrap:"wrap", gap:8, paddingTop:14 }}>
-            <div style={{ display:"flex", gap:6 }}>
-              {[["all","Todos"],["mine","Meus"],["answered","Respondidos"]].map(([v,l]) => (
-                <button key={v} onClick={() => setFilter(v)}
-                  style={{ ...s.ghost, ...(filter===v ? { background:C.goldLight, borderColor:C.gold, color:C.text } : {}) }}>
-                  {l}
+          <input style={s.input} placeholder="E-mail..." type="email" value={email}
+            onChange={e => setEmail(e.target.value)} />
+          <input style={s.input} placeholder="Senha..." type="password" value={pw}
+            onChange={e => setPw(e.target.value)}
+            onKeyDown={e => e.key==="Enter" && (tab==="login" ? handleLogin() : handleSignup())} />
+
+          <button className="btn-press" style={{ ...s.btn, marginTop:4, opacity:loading?.8:1 }}
+            onClick={tab==="login" ? handleLogin : handleSignup}>
+            {loading ? <Spinner /> : (tab==="login" ? "Entrar" : "Criar conta")}
+          </button>
+        </div>
+
+        <p style={{ textAlign:"center", color:C.muted, fontSize:12, marginTop:16 }}>
+          Acesso restrito ao grupo 🔒
+        </p>
+      </div>
+    </div>
+  );
+}
+
+// ── APP PRINCIPAL ─────────────────────────────────────────────────────────────
+function AppMain({ session, onLogout }) {
+  const { token, member: me } = session;
+
+  const [members,  setMembers]  = useState([]);
+  const [requests, setRequests] = useState([]);
+  const [intercs,  setIntercs]  = useState([]);
+  const [modal,    setModal]    = useState(null);
+  const [loading,  setLoading]  = useState(true);
+  const [saving,   setSaving]   = useState(false);
+  const [filter,   setFilter]   = useState("all");
+  const [reqTitle, setReqTitle] = useState("");
+  const [reqBody,  setReqBody]  = useState("");
+  const [error,    setError]    = useState(null);
+
+  const fetchAll = useCallback(async () => {
+    try {
+      const [m, r, i] = await Promise.all([
+        dbGet("pgm_members",       "?order=joined_at.asc&select=*", token),
+        dbGet("pgm_requests",      "?order=created_at.desc&select=*", token),
+        dbGet("pgm_intercessions", "?select=*", token),
+      ]);
+      setMembers(m); setRequests(r); setIntercs(i); setError(null);
+    } catch { setError("Erro ao carregar dados."); }
+    finally  { setLoading(false); }
+  }, [token]);
+
+  useEffect(() => { fetchAll(); }, []);
+  useEffect(() => { const t = setInterval(fetchAll, 30000); return () => clearInterval(t); }, []);
+
+  async function addRequest() {
+    if (!reqTitle.trim()) return;
+    setSaving(true);
+    try {
+      const [r] = await dbPost("pgm_requests",
+        { member_id: me.id, title: reqTitle.trim(), body: reqBody.trim() || null }, token);
+      setRequests(p => [r, ...p]);
+      setReqTitle(""); setReqBody(""); setModal(null);
+    } catch { setError("Erro ao salvar pedido."); }
+    setSaving(false);
+  }
+
+  async function togglePray(requestId) {
+    const existing = intercs.find(i => i.request_id === requestId && i.member_id === me.id);
+    if (existing) {
+      setIntercs(p => p.filter(i => i.id !== existing.id));
+      await dbDel("pgm_intercessions", `?id=eq.${existing.id}`, token);
+    } else {
+      const [i] = await dbPost("pgm_intercessions", { request_id: requestId, member_id: me.id }, token);
+      setIntercs(p => [...p, i]);
+    }
+  }
+
+  async function toggleAnswered(req) {
+    const val = { answered: !req.answered };
+    setRequests(p => p.map(r => r.id===req.id ? { ...r, ...val } : r));
+    await dbPatch("pgm_requests", req.id, val, token);
+  }
+
+  async function deleteRequest(id) {
+    setRequests(p => p.filter(r => r.id!==id));
+    setIntercs(p => p.filter(i => i.request_id!==id));
+    await dbDel("pgm_requests", `?id=eq.${id}`, token);
+  }
+
+  const member   = id => members.find(m => m.id===id);
+  const filtered = requests.filter(r =>
+    filter==="mine"     ? r.member_id===me?.id :
+    filter==="answered" ? r.answered : true
+  );
+
+  if (loading) return (
+    <div style={{ ...s.app, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:12 }}>
+      <div style={{ fontSize:48 }}>🕊️</div>
+      <p style={{ color:C.muted, fontSize:14 }}>Carregando...</p>
+    </div>
+  );
+
+  return (
+    <div style={s.app}>
+      {/* Header */}
+      <div style={s.header}>
+        <p style={s.htitle}>🕊️ PGM - Pedidos de Oração</p>
+        <p style={s.hsub}>
+          {members.length} membros · {requests.filter(r=>!r.answered).length} pedidos ativos · {intercs.length} intercesões
+        </p>
+        {me && (
+          <div style={{ marginTop:10, display:"inline-flex", alignItems:"center", gap:8, background:"rgba(255,255,255,0.12)", borderRadius:40, padding:"5px 14px 5px 10px" }}>
+            <span style={{ fontSize:17 }}>{me.emoji}</span>
+            <span style={{ fontSize:13, fontWeight:600 }}>{me.name}</span>
+            <button onClick={onLogout} style={{ background:"transparent", border:"1px solid rgba(255,255,255,.3)", color:"#fff", opacity:.8, cursor:"pointer", fontSize:12, padding:"2px 8px", marginLeft:6, borderRadius:20, fontFamily:"'Lora',Georgia,serif" }}>
+              Sair
+            </button>
+          </div>
+        )}
+      </div>
+
+      {error && (
+        <div style={{ ...s.errBox, margin:"12px 16px 0" }}>⚠️ {error}</div>
+      )}
+
+      {/* Membros do grupo */}
+      <div style={s.section}>
+        <span style={s.label}>👥 Membros do grupo</span>
+        <div style={{ display:"flex", flexWrap:"wrap" }}>
+          {members.map(m => (
+            <div key={m.id} style={{ ...s.chip, cursor:"default", ...(m.id===me?.id ? { background:"linear-gradient(135deg,#3A86C8,#6DB3E8)", color:"#fff", border:"1.5px solid #3A86C8" } : {}) }}>
+              <span style={{ fontSize:18 }}>{m.emoji}</span>
+              <span>{m.name}{m.id===me?.id ? " (você)" : ""}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Filtros + botão */}
+      <div style={{ ...s.section, display:"flex", alignItems:"center", justifyContent:"space-between", flexWrap:"wrap", gap:8, paddingTop:14 }}>
+        <div style={{ display:"flex", gap:6 }}>
+          {[["all","Todos"],["mine","Meus"],["answered","Respondidos"]].map(([v,l]) => (
+            <button key={v} onClick={() => setFilter(v)}
+              style={{ ...s.ghost, ...(filter===v ? { background:C.blueLight, borderColor:C.blue, color:C.text } : {}) }}>
+              {l}
+            </button>
+          ))}
+        </div>
+        <button className="btn-press" style={s.btnSm} onClick={() => setModal("request")}>
+          + Novo pedido
+        </button>
+      </div>
+
+      {/* Lista de pedidos */}
+      <div style={{ ...s.section, paddingTop:14 }}>
+        {filtered.length===0 && (
+          <p style={{ textAlign:"center", color:C.muted, padding:"28px 0", fontStyle:"italic", fontSize:14 }}>
+            Nenhum pedido aqui ainda. 💛
+          </p>
+        )}
+        {filtered.map(req => {
+          const author  = member(req.member_id);
+          const reqI    = intercs.filter(i => i.request_id===req.id);
+          const iPrayed = reqI.some(i => i.member_id===me?.id);
+          const isOwner = me?.id===req.member_id;
+          return (
+            <div key={req.id} className="fade"
+              style={{ ...s.card, ...(req.answered ? { borderColor:C.answered, background:C.answeredBg } : {}) }}>
+              <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", gap:8 }}>
+                <div style={{ flex:1 }}>
+                  <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:3 }}>
+                    <span style={{ fontSize:19 }}>{author?.emoji||"🙏"}</span>
+                    <span style={{ fontWeight:700, fontSize:15 }}>{req.title}</span>
+                  </div>
+                  <div style={{ fontSize:12, color:C.muted }}>{author?.name} · {timeAgo(req.created_at)}</div>
+                  {req.body && <p style={{ marginTop:8, fontSize:14, lineHeight:1.65 }}>{req.body}</p>}
+                </div>
+                {req.answered && <span style={s.answTag}>✅ Respondida</span>}
+              </div>
+              <hr style={s.divider}/>
+              <div style={{ display:"flex", alignItems:"center", gap:8, flexWrap:"wrap" }}>
+                <button onClick={() => togglePray(req.id)}
+                  style={{ ...s.ghost, ...(iPrayed ? { background:"#E0F0FF", borderColor:C.blue, color:"#1A5C8A" } : {}) }}>
+                  🙏 {iPrayed ? "Orei por isso" : "Orar por isso"}
                 </button>
-              ))}
-            </div>
-            {me && <button className="btn" style={s.btn} onClick={() => setModal("request")}>+ Novo pedido</button>}
-          </div>
-
-          {/* Pedidos */}
-          <div style={{ ...s.section, paddingTop:14 }}>
-            {!me && <p style={{ textAlign:"center", color:C.muted, padding:"16px 0", fontStyle:"italic", fontSize:14 }}>Selecione seu nome para interagir 🙏</p>}
-            {filtered.length === 0 && <p style={{ textAlign:"center", color:C.muted, padding:"24px 0", fontStyle:"italic", fontSize:14 }}>Nenhum pedido aqui ainda. 💛</p>}
-            {filtered.map(req => {
-              const author  = member(req.member_id);
-              const reqI    = intercs.filter(i => i.request_id === req.id);
-              const iPrayed = me && reqI.some(i => i.member_id === me.id);
-              const isOwner = me?.id === req.member_id;
-              return (
-                <div key={req.id} className="fade"
-                  style={{ ...s.card, ...(req.answered ? { borderColor:C.answered, background:C.answeredBg } : {}) }}>
-                  <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", gap:8 }}>
-                    <div style={{ flex:1 }}>
-                      <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:3 }}>
-                        <span style={{ fontSize:19 }}>{author?.emoji || "🙏"}</span>
-                        <span style={{ fontWeight:700, fontSize:15 }}>{req.title}</span>
-                      </div>
-                      <div style={{ fontSize:12, color:C.muted }}>{author?.name} · {timeAgo(req.created_at)}</div>
-                      {req.body && <p style={{ marginTop:8, fontSize:14, lineHeight:1.65 }}>{req.body}</p>}
-                    </div>
-                    {req.answered && <span style={s.answeredTag}>✅ Respondida</span>}
-                  </div>
-                  <hr style={s.divider} />
-                  <div style={{ display:"flex", alignItems:"center", gap:8, flexWrap:"wrap" }}>
-                    {me && (
-                      <button onClick={() => togglePray(req.id)}
-                        style={{ ...s.ghost, ...(iPrayed ? { background:"#E0F0FF", borderColor:C.gold, color:"#1A5C8A" } : {}) }}>
-                        🙏 {iPrayed ? "Orei por isso" : "Orar por isso"}
-                      </button>
-                    )}
-                    {reqI.length > 0 && (
-                      <span style={{ fontSize:13, color:C.muted, fontStyle:"italic" }}>
-                        {reqI.length} {reqI.length===1?"pessoa orou":"pessoas oraram"}
-                        <span style={{ marginLeft:5 }}>{reqI.slice(0,5).map(i=>member(i.member_id)?.emoji).filter(Boolean).join("")}</span>
-                      </span>
-                    )}
-                    {isOwner && <>
-                      <button style={s.answeredBtn} onClick={() => toggleAnswered(req)}>
-                        {req.answered ? "↩ Desfazer" : "✅ Respondida!"}
-                      </button>
-                      <button onClick={() => deleteRequest(req.id)}
-                        style={{ ...s.ghost, color:"#C0392B", borderColor:"#EBCDD0" }}>🗑</button>
-                    </>}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-
-          <div style={{ textAlign:"center", padding:"16px 0 0" }}>
-            <button style={s.ghost} onClick={fetchAll}>↻ Atualizar</button>
-          </div>
-
-          {/* Modal: Entrar */}
-          {modal === "member" && (
-            <div style={s.modal} onClick={e => e.target===e.currentTarget && setModal(null)}>
-              <div style={s.modalBox}>
-                <span style={s.modalTitle}>Entrar no grupo 🕊️</span>
-                <div style={s.emojiGrid}>
-                  {EMOJIS.map(e => (
-                    <button key={e} onClick={() => setNewEmoji(e)} style={{
-                      fontSize:24, background:newEmoji===e?"#E0F0FF":C.goldLight,
-                      border:`2px solid ${newEmoji===e?C.gold:"transparent"}`,
-                      borderRadius:12, padding:"7px 0", cursor:"pointer"
-                    }}>{e}</button>
-                  ))}
-                </div>
-                <input style={s.input} placeholder="Seu nome..." value={newName}
-                  onChange={e => setNewName(e.target.value)}
-                  onKeyDown={e => e.key==="Enter" && addMember()} />
-                <div style={{ display:"flex", gap:10, marginTop:4 }}>
-                  <button className="btn" style={{ ...s.btn, flex:1, opacity:saving?.7:1 }} onClick={addMember}>
-                    {saving?"Salvando...":"Entrar"}
+                {reqI.length>0 && (
+                  <span style={{ fontSize:13, color:C.muted, fontStyle:"italic" }}>
+                    {reqI.length} {reqI.length===1?"pessoa orou":"pessoas oraram"}
+                    <span style={{ marginLeft:5 }}>{reqI.slice(0,5).map(i=>member(i.member_id)?.emoji).filter(Boolean).join("")}</span>
+                  </span>
+                )}
+                {isOwner && <>
+                  <button style={s.answBtn} onClick={() => toggleAnswered(req)}>
+                    {req.answered ? "↩ Desfazer" : "✅ Respondida!"}
                   </button>
-                  <button style={s.ghost} onClick={() => setModal(null)}>Cancelar</button>
-                </div>
+                  <button onClick={() => deleteRequest(req.id)}
+                    style={{ ...s.ghost, color:C.error, borderColor:"#F1B0A8" }}>🗑</button>
+                </>}
               </div>
             </div>
-          )}
+          );
+        })}
+      </div>
 
-          {/* Modal: Novo pedido */}
-          {modal === "request" && (
-            <div style={s.modal} onClick={e => e.target===e.currentTarget && setModal(null)}>
-              <div style={s.modalBox}>
-                <span style={s.modalTitle}>Novo pedido de oração 🙏</span>
-                <input style={s.input} placeholder="Título do pedido..." value={reqTitle}
-                  onChange={e => setReqTitle(e.target.value)} />
-                <textarea style={s.textarea} placeholder="Detalhes (opcional)..." value={reqBody}
-                  onChange={e => setReqBody(e.target.value)} />
-                <div style={{ display:"flex", gap:10, marginTop:10 }}>
-                  <button className="btn" style={{ ...s.btn, flex:1, opacity:saving?.7:1 }} onClick={addRequest}>
-                    {saving?"Salvando...":"Compartilhar"}
-                  </button>
-                  <button style={s.ghost} onClick={() => setModal(null)}>Cancelar</button>
-                </div>
-              </div>
+      <div style={{ textAlign:"center", padding:"16px 0 0" }}>
+        <button style={s.ghost} onClick={fetchAll}>↻ Atualizar</button>
+      </div>
+
+      {/* Modal: Novo pedido */}
+      {modal==="request" && (
+        <div style={s.modal} onClick={e => e.target===e.currentTarget && setModal(null)}>
+          <div style={s.modalBox}>
+            <span style={s.mTitle}>Novo pedido de oração 🙏</span>
+            <input style={s.input} placeholder="Título do pedido..." value={reqTitle}
+              onChange={e => setReqTitle(e.target.value)}/>
+            <textarea style={s.textarea} placeholder="Detalhes (opcional)..." value={reqBody}
+              onChange={e => setReqBody(e.target.value)}/>
+            <div style={{ display:"flex", gap:10, marginTop:10 }}>
+              <button className="btn-press" style={{ ...s.btnSm, flex:1, opacity:saving?.7:1 }} onClick={addRequest}>
+                {saving ? <Spinner/> : "Compartilhar"}
+              </button>
+              <button style={s.ghost} onClick={() => setModal(null)}>Cancelar</button>
             </div>
-          )}
+          </div>
         </div>
-      );
-    }
+      )}
+    </div>
+  );
+}
 
-    ReactDOM.createRoot(document.getElementById("root")).render(<PGM />);
-  </script>
+// ── ROOT ──────────────────────────────────────────────────────────────────────
+function App() {
+  const [session, setSession] = useState(null);
+  const [booting, setBooting] = useState(true);
+
+  useEffect(() => {
+    // Restaurar sessão salva
+    try {
+      const saved = localStorage.getItem("pgm_session");
+      if (saved) setSession(JSON.parse(saved));
+    } catch {}
+    setBooting(false);
+  }, []);
+
+  function handleAuth(sess) {
+    setSession(sess);
+    try { localStorage.setItem("pgm_session", JSON.stringify(sess)); } catch {}
+  }
+
+  async function handleLogout() {
+    try { await authLogout(session?.token); } catch {}
+    setSession(null);
+    try { localStorage.removeItem("pgm_session"); } catch {}
+  }
+
+  if (booting) return (
+    <div style={{ ...s.app, display:"flex", alignItems:"center", justifyContent:"center", fontSize:48 }}>🕊️</div>
+  );
+
+  if (!session) return <AuthScreen onAuth={handleAuth}/>;
+  return <AppMain session={session} onLogout={handleLogout}/>;
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+</script>
 </body>
 </html>
