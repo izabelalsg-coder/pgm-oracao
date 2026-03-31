@@ -8,7 +8,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Lora:wght@400;600&display=swap" rel="stylesheet" />
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    body { background: #FDF6EC; }
+    body { background: #F0F7FF; }
     ::-webkit-scrollbar { width: 0; }
     @keyframes slideUp { from { transform: translateY(100%); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
     @keyframes fadeIn  { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
@@ -53,27 +53,27 @@
 
     // ── CORES / ESTILOS ───────────────────────────────────────────────────────
     const C = {
-      bg: "#FDF6EC", card: "#FFFBF4", border: "#EDD9B4",
-      gold: "#C9972A", goldLight: "#F5E0A0", text: "#3B2A12",
-      muted: "#9A7A4A", answered: "#4A7C59", answeredBg: "#EAF5EE",
+      bg: "#F0F7FF", card: "#F7FBFF", border: "#BDD8F5",
+      gold: "#3A86C8", goldLight: "#D6EAFA", text: "#1A3550",
+      muted: "#5A89AA", answered: "#2E7D52", answeredBg: "#E6F4ED",
     };
     const s = {
-      app:        { minHeight:"100vh", background:"radial-gradient(ellipse at 60% 0%,#FFF3D6,#FDF6EC 60%,#F5E8D0)", fontFamily:"'Lora',Georgia,serif", color:C.text, paddingBottom:80 },
-      header:     { background:"linear-gradient(135deg,#3B2A12,#6B4A1E)", color:"#FFF8EC", padding:"28px 20px 18px", textAlign:"center", position:"sticky", top:0, zIndex:10, boxShadow:"0 4px 24px rgba(59,42,18,.2)" },
+      app:        { minHeight:"100vh", background:"radial-gradient(ellipse at 60% 0%,#D6EAFA,#F0F7FF 60%,#E2F0FB)", fontFamily:"'Lora',Georgia,serif", color:C.text, paddingBottom:80 },
+      header:     { background:"linear-gradient(135deg,#1A3550,#2E6EA6)", color:"#FFF8EC", padding:"28px 20px 18px", textAlign:"center", position:"sticky", top:0, zIndex:10, boxShadow:"0 4px 24px rgba(26,53,80,.2)" },
       title:      { fontSize:22, fontWeight:700, fontFamily:"'Playfair Display',Georgia,serif", letterSpacing:".03em" },
       sub:        { fontSize:12, opacity:.65, marginTop:4, letterSpacing:".08em" },
       section:    { padding:"18px 16px 0" },
       label:      { fontSize:11, fontWeight:700, letterSpacing:".14em", textTransform:"uppercase", color:C.muted, marginBottom:10, display:"block" },
-      card:       { background:C.card, border:`1.5px solid ${C.border}`, borderRadius:16, padding:"14px 16px", marginBottom:10, boxShadow:"0 2px 12px rgba(180,140,60,.07)" },
+      card:       { background:C.card, border:`1.5px solid ${C.border}`, borderRadius:16, padding:"14px 16px", marginBottom:10, boxShadow:"0 2px 12px rgba(80,140,200,.07)" },
       chip:       { display:"inline-flex", alignItems:"center", gap:8, background:C.goldLight, border:`1.5px solid ${C.border}`, borderRadius:40, padding:"8px 14px 8px 10px", cursor:"pointer", fontSize:14, fontWeight:600, margin:3 },
-      activeChip: { background:"linear-gradient(135deg,#C9972A,#E8C068)", color:"#fff", border:"1.5px solid #C9972A", boxShadow:"0 2px 10px rgba(201,151,42,.3)" },
-      btn:        { background:"linear-gradient(135deg,#C9972A,#E8C068)", color:"#fff", border:"none", borderRadius:40, padding:"10px 22px", fontSize:14, fontWeight:700, cursor:"pointer", boxShadow:"0 2px 10px rgba(201,151,42,.25)" },
+      activeChip: { background:"linear-gradient(135deg,#3A86C8,#6DB3E8)", color:"#fff", border:"1.5px solid #C9972A", boxShadow:"0 2px 10px rgba(58,134,200,.3)" },
+      btn:        { background:"linear-gradient(135deg,#3A86C8,#6DB3E8)", color:"#fff", border:"none", borderRadius:40, padding:"10px 22px", fontSize:14, fontWeight:700, cursor:"pointer", boxShadow:"0 2px 10px rgba(58,134,200,.25)" },
       ghost:      { background:"transparent", border:`1.5px solid ${C.border}`, color:C.muted, borderRadius:40, padding:"8px 14px", fontSize:13, fontWeight:600, cursor:"pointer" },
       answeredBtn:{ background:C.answeredBg, border:`1.5px solid ${C.answered}`, color:C.answered, borderRadius:40, padding:"7px 14px", fontSize:13, fontWeight:700, cursor:"pointer" },
       input:      { width:"100%", background:"#FFFDF8", border:`1.5px solid ${C.border}`, borderRadius:12, padding:"11px 13px", fontSize:15, color:C.text, fontFamily:"'Lora',Georgia,serif", outline:"none", marginBottom:8, display:"block" },
       textarea:   { width:"100%", background:"#FFFDF8", border:`1.5px solid ${C.border}`, borderRadius:12, padding:"11px 13px", fontSize:15, color:C.text, fontFamily:"'Lora',Georgia,serif", outline:"none", minHeight:80, resize:"vertical", display:"block" },
-      modal:      { position:"fixed", inset:0, background:"rgba(30,18,4,.45)", zIndex:100, display:"flex", alignItems:"flex-end", justifyContent:"center" },
-      modalBox:   { background:C.card, borderRadius:"20px 20px 0 0", padding:"24px 20px 40px", width:"100%", maxWidth:480, boxShadow:"0 -8px 40px rgba(59,42,18,.18)", animation:"slideUp .25s ease" },
+      modal:      { position:"fixed", inset:0, background:"rgba(10,30,60,.45)", zIndex:100, display:"flex", alignItems:"flex-end", justifyContent:"center" },
+      modalBox:   { background:C.card, borderRadius:"20px 20px 0 0", padding:"24px 20px 40px", width:"100%", maxWidth:480, boxShadow:"0 -8px 40px rgba(26,53,80,.18)", animation:"slideUp .25s ease" },
       modalTitle: { fontFamily:"'Playfair Display',Georgia,serif", fontSize:20, fontWeight:700, marginBottom:14, color:C.text, display:"block" },
       divider:    { border:"none", borderTop:`1px solid ${C.border}`, margin:"12px 0" },
       answeredTag:{ display:"inline-block", background:C.answeredBg, borderRadius:20, padding:"2px 9px", fontSize:12, fontWeight:700, color:C.answered },
@@ -265,7 +265,7 @@
                   <div style={{ display:"flex", alignItems:"center", gap:8, flexWrap:"wrap" }}>
                     {me && (
                       <button onClick={() => togglePray(req.id)}
-                        style={{ ...s.ghost, ...(iPrayed ? { background:"#FFF3C4", borderColor:C.gold, color:"#7A5000" } : {}) }}>
+                        style={{ ...s.ghost, ...(iPrayed ? { background:"#E0F0FF", borderColor:C.gold, color:"#1A5C8A" } : {}) }}>
                         🙏 {iPrayed ? "Orei por isso" : "Orar por isso"}
                       </button>
                     )}
@@ -300,7 +300,7 @@
                 <div style={s.emojiGrid}>
                   {EMOJIS.map(e => (
                     <button key={e} onClick={() => setNewEmoji(e)} style={{
-                      fontSize:24, background:newEmoji===e?"#FFF3C4":C.goldLight,
+                      fontSize:24, background:newEmoji===e?"#E0F0FF":C.goldLight,
                       border:`2px solid ${newEmoji===e?C.gold:"transparent"}`,
                       borderRadius:12, padding:"7px 0", cursor:"pointer"
                     }}>{e}</button>
