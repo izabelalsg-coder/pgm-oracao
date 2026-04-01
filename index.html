@@ -261,9 +261,15 @@ function AppMain({ session, onLogout }) {
       ]);
       setMembers(m); setRequests(r); setIntercs(i); setError(null);
     } catch(e) {
+      if (e.message.includes("JWT") || e.message.includes("expired") || e.message.includes("invalid claim")) {
+        // Sessão expirada — limpar e voltar ao login
+        try { localStorage.removeItem("pgm_session"); } catch {}
+        onLogout();
+        return;
+      }
       setError(`Erro ao carregar: ${e.message}`);
     } finally { setLoading(false); }
-  }, [token]);
+  }, [token, onLogout]);
 
   useEffect(() => { fetchAll(); }, []);
   useEffect(() => { const t = setInterval(fetchAll, 30000); return () => clearInterval(t); }, []);
