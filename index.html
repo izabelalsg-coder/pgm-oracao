@@ -314,7 +314,8 @@ function AppMain({ session, onLogout }) {
   const member   = id => members.find(m => m.id===id);
   const filtered = requests.filter(r =>
     filter==="mine"     ? r.member_id===me?.id :
-    filter==="answered" ? r.answered : true
+    filter==="answered" ? r.answered :
+    filter==="pending"  ? !r.answered : true
   );
 
   if (loading) return (
@@ -359,7 +360,7 @@ function AppMain({ session, onLogout }) {
 
       <div style={{ ...s.section, display:"flex", alignItems:"center", justifyContent:"space-between", flexWrap:"wrap", gap:8, paddingTop:14 }}>
         <div style={{ display:"flex", gap:6 }}>
-          {[["all","Todos"],["mine","Meus"],["answered","Respondidos"]].map(([v,l]) => (
+          {[["all","Todos"],["pending","Em espera"],["mine","Meus"],["answered","Respondidos"]].map(([v,l]) => (
             <button key={v} onClick={() => setFilter(v)}
               style={{ ...s.ghost, ...(filter===v ? { background:C.blueLight, borderColor:C.blue, color:C.text } : {}) }}>
               {l}
