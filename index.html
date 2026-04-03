@@ -54,6 +54,7 @@ async function api(method, path, body, token) {
 const authLogin  = (e, p)      => api("POST", "/auth/v1/token?grant_type=password", { email:e, password:p });
 const authSignup = (e, p)      => api("POST", "/auth/v1/signup", { email:e, password:p });
 const authLogout = (tk)        => api("POST", "/auth/v1/logout", {}, tk);
+const authRecover = (email)    => api("POST", "/auth/v1/recover", { email });
 const dbGet      = (t, p, tk)  => api("GET",    `/rest/v1/${t}${p}`, null, tk);
 const dbPost     = (t, b, tk)  => api("POST",   `/rest/v1/${t}`, b, tk);
 const dbPatch    = (t, id, b, tk) => api("PATCH", `/rest/v1/${t}?id=eq.${id}`, b, tk);
@@ -108,13 +109,27 @@ function Spinner() {
 
 // ── TELA AUTH ────────────────────────────────────────────────────────────────
 function AuthScreen({ onAuth }) {
-  const [tab,   setTab]   = useState("login");
-  const [email, setEmail] = useState("");
-  const [pw,    setPw]    = useState("");
-  const [name,  setName]  = useState("");
-  const [emoji, setEmoji] = useState("🙏");
-  const [busy,  setBusy]  = useState(false);
-  const [err,   setErr]   = useState("");
+  const [tab,       setTab]       = useState("login");
+  const [email,     setEmail]     = useState("");
+  const [pw,        setPw]        = useState("");
+  const [name,      setName]      = useState("");
+  const [emoji,     setEmoji]     = useState("🙏");
+  const [busy,      setBusy]      = useState(false);
+  const [err,       setErr]       = useState("");
+  const [recover,   setRecover]   = useState(false);
+  const [recoverOk, setRecoverOk] = useState(false);
+
+  async function doRecover() {
+    if (!email) { setErr("Digite seu e-mail para redefinir a senha."); return; }
+    setBusy(true); setErr("");
+    try {
+      await authRecover(email);
+      setRecoverOk(true);
+    } catch(e) {
+      setErr("Erro ao enviar e-mail. Verifique o endereço.");
+    }
+    setBusy(false);
+  }
 
   async function doLogin() {
     if (!email || !pw) { setErr("Preencha e-mail e senha."); return; }
@@ -162,6 +177,29 @@ function AuthScreen({ onAuth }) {
             <button style={{ ...s.tab, ...(tab==="login"  ? s.tabAct : {}) }} onClick={() => { setTab("login");  setErr(""); }}>Entrar</button>
             <button style={{ ...s.tab, ...(tab==="signup" ? s.tabAct : {}) }} onClick={() => { setTab("signup"); setErr(""); }}>Cadastrar</button>
           </div>
+          {/* Tela de recuperação de senha */}
+          {recover ? (
+            recoverOk ? (
+              <div style={{ textAlign:"center", padding:"8px 0 4px" }}>
+                <div style={{ fontSize:36, marginBottom:10 }}>📬</div>
+                <p style={{ fontWeight:700, color:C.text, marginBottom:6 }}>E-mail enviado!</p>
+                <p style={{ color:C.muted, fontSize:13, marginBottom:16 }}>Verifique sua caixa de entrada e siga o link para criar uma nova senha.</p>
+                <button style={{ ...s.ghost, width:"100%" }} onClick={() => { setRecover(false); setRecoverOk(false); setErr(""); }}>Voltar ao login</button>
+              </div>
+            ) : (
+              <>
+                <p style={{ color:C.muted, fontSize:13, marginBottom:12 }}>Digite seu e-mail e enviaremos um link para redefinir sua senha.</p>
+                {err && <div style={s.errBox}>{err}</div>}
+                <input style={s.input} placeholder="Seu e-mail..." type="email" value={email} onChange={e => setEmail(e.target.value)}
+                  onKeyDown={e => e.key==="Enter" && doRecover()}/>
+                <button className="btn-press" style={{ ...s.btn, opacity:busy?.8:1 }} onClick={doRecover}>
+                  {busy ? <Spinner/> : "Enviar link de redefinição"}
+                </button>
+                <button style={{ ...s.ghost, width:"100%", marginTop:10, textAlign:"center" }}
+                  onClick={() => { setRecover(false); setErr(""); }}>Voltar</button>
+              </>
+            )
+          ) : (<>
           {err && <div style={s.errBox}>{err}</div>}
           {tab === "signup" && <>
             <span style={{ ...s.label, marginBottom:8 }}>Seu emoji no grupo</span>
@@ -179,6 +217,13 @@ function AuthScreen({ onAuth }) {
           <button className="btn-press" style={{ ...s.btn, opacity:busy?.8:1 }} onClick={tab==="login" ? doLogin : doSignup}>
             {busy ? <Spinner/> : (tab==="login" ? "Entrar" : "Criar conta")}
           </button>
+          {tab==="login" && (
+            <button onClick={() => { setRecover(true); setErr(""); }}
+              style={{ background:"none", border:"none", color:C.muted, fontSize:13, cursor:"pointer", marginTop:12, width:"100%", textAlign:"center", textDecoration:"underline", fontFamily:"inherit" }}>
+              Esqueci minha senha
+            </button>
+          )}
+          </>)}
         </div>
         <p style={{ textAlign:"center", color:C.muted, fontSize:12, marginTop:16 }}>Acesso restrito ao grupo 🔒</p>
       </div>
