@@ -341,6 +341,7 @@ function ProfileSetup({ session, onDone, onLogout }) {
 function AppMain({ session, onLogout }) {
   const { token, member: me } = session;
 
+  const [activeTab, setActiveTab]= useState("prayers");
   const [members,   setMembers]  = useState([]);
   const [requests,  setRequests] = useState([]);
   const [intercs,   setIntercs]  = useState([]);
@@ -476,6 +477,7 @@ function AppMain({ session, onLogout }) {
         </div>
       )}
 
+      {activeTab === "prayers" && <div>
       <div style={s.section}>
         <span style={s.label}>👥 Membros do grupo</span>
         <div style={{ display:"flex", flexWrap:"wrap" }}>
@@ -552,6 +554,25 @@ function AppMain({ session, onLogout }) {
         <button style={s.ghost} onClick={fetchAll}>↻ Atualizar</button>
       </div>
 
+      </div>}
+
+      {activeTab === "meetings" && <MeetingsTab session={session} members={members}/>}
+
+      {/* Bottom nav */}
+      <div style={{ position:"fixed", bottom:0, left:0, right:0, background:C.card, borderTop:`1.5px solid ${C.border}`, display:"flex", zIndex:20, boxShadow:"0 -2px 12px rgba(26,53,80,.08)" }}>
+        {[["prayers","🙏","Orações"],["meetings","📅","Reuniões"]].map(([tab,icon,label]) => (
+          <button key={tab} onClick={() => setActiveTab(tab)}
+            style={{ flex:1, padding:"12px 0 10px", border:"none", background:"transparent", cursor:"pointer",
+              color: activeTab===tab ? C.blue : C.muted,
+              borderTop: activeTab===tab ? `2.5px solid ${C.blue}` : "2.5px solid transparent",
+              fontSize:11, fontWeight:700, letterSpacing:".06em", fontFamily:"'Lora',Georgia,serif",
+              display:"flex", flexDirection:"column", alignItems:"center", gap:3 }}>
+            <span style={{ fontSize:20 }}>{icon}</span>
+            <span>{label}</span>
+          </button>
+        ))}
+      </div>
+
       {modal==="request" && (
         <div style={s.modal} onClick={e => e.target===e.currentTarget && setModal(null)}>
           <div style={s.modalBox}>
@@ -587,6 +608,193 @@ function AppMain({ session, onLogout }) {
               onKeyDown={e => e.key==="Enter" && saveProfile()}/>
             <div style={{ display:"flex", gap:10, marginTop:4 }}>
               <button className="btn-press" style={{ ...s.btnSm, flex:1, opacity:saving?.8:1 }} onClick={saveProfile}>
+                {saving ? <Spinner/> : "Salvar"}
+              </button>
+              <button style={s.ghost} onClick={() => setModal(null)}>Cancelar</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+
+// ── ABA REUNIÕES ──────────────────────────────────────────────────────────────
+function MeetingsTab({ session, members }) {
+  const { token, member: me } = session;
+  const [meetings,  setMeetings]  = useState([]);
+  const [confirms,  setConfirms]  = useState([]);
+  const [modal,     setModal]     = useState(null); // null | "create" | meeting obj
+  const [saving,    setSaving]    = useState(false);
+  const [error,     setError]     = useState(null);
+
+  const [mDate,  setMDate]  = useState("");
+  const [mTime,  setMTime]  = useState("");
+  const [mLocal, setMLocal] = useState("");
+  const [mNotes, setMNotes] = useState("");
+
+  const today = new Date().toISOString().slice(0, 10);
+
+  async function fetchMeetings() {
+    try {
+      const [mt, cf] = await Promise.all([
+        dbGet("pgm_meetings",             "?order=date.asc,time.asc&select=*", token),
+        dbGet("pgm_meeting_confirmations","?select=*", token),
+      ]);
+      // Apenas reuniões de hoje em diante
+      setMeetings(mt.filter(m => m.date >= today));
+      setConfirms(cf);
+      setError(null);
+    } catch(e) { setError(`Erro ao carregar reuniões: ${e.message}`); }
+  }
+
+  useEffect(() => { fetchMeetings(); }, []);
+
+  function openCreate() {
+    setMDate(""); setMTime(""); setMLocal(""); setMNotes("");
+    setModal("create");
+  }
+
+  function openEdit(m) {
+    setMDate(m.date); setMTime(m.time.slice(0,5)); setMLocal(m.location||""); setMNotes(m.notes||"");
+    setModal(m);
+  }
+
+  async function saveMeeting() {
+    if (!mDate || !mTime) { setError("Data e hora são obrigatórias."); return; }
+    setSaving(true); setError(null);
+    try {
+      if (modal === "create") {
+        const [m] = await dbPost("pgm_meetings",
+          { member_id: me.id, date: mDate, time: mTime, location: mLocal||null, notes: mNotes||null }, token);
+        setMeetings(p => [...p, m].filter(x => x.date >= today).sort((a,b) => a.date.localeCompare(b.date)||a.time.localeCompare(b.time)));
+      } else {
+        await dbPatch("pgm_meetings", modal.id, { date: mDate, time: mTime, location: mLocal||null, notes: mNotes||null }, token);
+        setMeetings(p => p.map(x => x.id===modal.id ? { ...x, date:mDate, time:mTime, location:mLocal||null, notes:mNotes||null } : x));
+      }
+      setModal(null);
+    } catch(e) { setError(`Erro ao salvar: ${e.message}`); }
+    setSaving(false);
+  }
+
+  async function deleteMeeting(id) {
+    if (!confirm("Excluir esta reunião?")) return;
+    setMeetings(p => p.filter(m => m.id!==id));
+    setConfirms(p => p.filter(c => c.meeting_id!==id));
+    await dbDel("pgm_meetings", `?id=eq.${id}`, token);
+  }
+
+  async function toggleConfirm(meetingId) {
+    if (!me?.id) return;
+    const existing = confirms.find(c => c.meeting_id===meetingId && c.member_id===me.id);
+    if (existing) {
+      setConfirms(p => p.filter(c => c.id!==existing.id));
+      await dbDel("pgm_meeting_confirmations", `?id=eq.${existing.id}`, token);
+    } else {
+      const [c] = await dbPost("pgm_meeting_confirmations", { meeting_id: meetingId, member_id: me.id }, token);
+      setConfirms(p => [...p, c]);
+    }
+  }
+
+  function formatDate(d) {
+    const [y,m,day] = d.split("-");
+    const names = ["jan","fev","mar","abr","mai","jun","jul","ago","set","out","nov","dez"];
+    return `${parseInt(day)} de ${names[parseInt(m)-1]} de ${y}`;
+  }
+
+  function formatTime(t) {
+    return t.slice(0,5);
+  }
+
+  const member = id => members.find(m => m.id===id);
+
+  return (
+    <div>
+      {error && (
+        <div style={{ ...s.errBox, margin:"12px 16px 0" }}>
+          ⚠️ {error}
+          <button onClick={() => setError(null)} style={{ float:"right", background:"none", border:"none", cursor:"pointer", color:C.error, fontSize:16 }}>×</button>
+        </div>
+      )}
+
+      <div style={{ ...s.section, display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+        <span style={s.label}>📅 Próximas reuniões</span>
+        <button className="btn-press" style={{ ...s.btnSm, marginBottom:10 }} onClick={openCreate}>+ Nova reunião</button>
+      </div>
+
+      <div style={{ padding:"4px 16px 0" }}>
+        {meetings.length===0 && (
+          <p style={{ textAlign:"center", color:C.muted, padding:"28px 0", fontStyle:"italic", fontSize:14 }}>
+            Nenhuma reunião agendada. 📅
+          </p>
+        )}
+        {meetings.map(m => {
+          const mtConfirms = confirms.filter(c => c.meeting_id===m.id);
+          const iConfirmed = mtConfirms.some(c => c.member_id===me?.id);
+          const isToday    = m.date === today;
+
+          return (
+            <div key={m.id} className="fade" style={{ ...s.card, ...(isToday ? { borderColor:C.blue, borderWidth:2 } : {}) }}>
+              <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", gap:8 }}>
+                <div style={{ flex:1 }}>
+                  <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:4, flexWrap:"wrap" }}>
+                    <span style={{ fontWeight:700, fontSize:16, fontFamily:"'Playfair Display',Georgia,serif" }}>Reunião PGM</span>
+                    {isToday && (
+                      <span style={{ background:C.blue, color:"#fff", fontSize:11, fontWeight:700, borderRadius:20, padding:"2px 9px", letterSpacing:".04em" }}>HOJE</span>
+                    )}
+                  </div>
+                  <div style={{ fontSize:13, color:C.muted, lineHeight:1.8 }}>
+                    <div>📅 {formatDate(m.date)}</div>
+                    <div>🕐 {formatTime(m.time)}</div>
+                    {m.location && <div>📍 {m.location}</div>}
+                  </div>
+                  {m.notes && <p style={{ marginTop:8, fontSize:14, lineHeight:1.65, color:C.text }}>{m.notes}</p>}
+                </div>
+                <div style={{ display:"flex", gap:6 }}>
+                  <button onClick={() => openEdit(m)} style={{ ...s.ghost, padding:"6px 10px", fontSize:14 }}>✏️</button>
+                  <button onClick={() => deleteMeeting(m.id)} style={{ ...s.ghost, padding:"6px 10px", fontSize:14, color:C.error, borderColor:"#F1B0A8" }}>🗑</button>
+                </div>
+              </div>
+
+              <hr style={s.divider}/>
+
+              <div style={{ display:"flex", alignItems:"center", gap:8, flexWrap:"wrap" }}>
+                <button onClick={() => toggleConfirm(m.id)}
+                  style={{ ...s.ghost, ...(iConfirmed ? { background:"#E0F0FF", borderColor:C.blue, color:"#1A5C8A" } : {}) }}>
+                  ✅ {iConfirmed ? "Confirmei presença" : "Confirmar presença"}
+                </button>
+                {mtConfirms.length > 0 && (
+                  <span style={{ fontSize:13, color:C.muted, fontStyle:"italic" }}>
+                    {mtConfirms.length} {mtConfirms.length===1 ? "confirmado" : "confirmados"}
+                    <span style={{ marginLeft:5 }}>{mtConfirms.slice(0,5).map(c => member(c.member_id)?.emoji).filter(Boolean).join("")}</span>
+                  </span>
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      <div style={{ textAlign:"center", padding:"16px 0 0" }}>
+        <button style={s.ghost} onClick={fetchMeetings}>↻ Atualizar</button>
+      </div>
+
+      {/* Modal criar/editar */}
+      {modal !== null && (
+        <div style={s.modal} onClick={e => e.target===e.currentTarget && setModal(null)}>
+          <div style={s.modalBox}>
+            <span style={s.mTitle}>{modal==="create" ? "Nova reunião 📅" : "Editar reunião ✏️"}</span>
+            <label style={{ ...s.label, marginBottom:4 }}>Data</label>
+            <input style={s.input} type="date" value={mDate} onChange={e => setMDate(e.target.value)}/>
+            <label style={{ ...s.label, marginBottom:4 }}>Hora</label>
+            <input style={s.input} type="time" value={mTime} onChange={e => setMTime(e.target.value)}/>
+            <label style={{ ...s.label, marginBottom:4 }}>Local (opcional)</label>
+            <input style={s.input} placeholder="Ex: Casa da Bela, Meet..." value={mLocal} onChange={e => setMLocal(e.target.value)}/>
+            <label style={{ ...s.label, marginBottom:4 }}>Pauta / Link / Observações</label>
+            <textarea style={s.textarea} placeholder="Pauta da reunião, link de acesso..." value={mNotes} onChange={e => setMNotes(e.target.value)}/>
+            <div style={{ display:"flex", gap:10, marginTop:10 }}>
+              <button className="btn-press" style={{ ...s.btnSm, flex:1, opacity:saving?.8:1 }} onClick={saveMeeting}>
                 {saving ? <Spinner/> : "Salvar"}
               </button>
               <button style={s.ghost} onClick={() => setModal(null)}>Cancelar</button>
