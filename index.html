@@ -341,16 +341,18 @@ function ProfileSetup({ session, onDone, onLogout }) {
 function AppMain({ session, onLogout }) {
   const { token, member: me } = session;
 
-  const [members,  setMembers]  = useState([]);
-  const [requests, setRequests] = useState([]);
-  const [intercs,  setIntercs]  = useState([]);
-  const [modal,    setModal]    = useState(null);
-  const [loading,  setLoading]  = useState(true);
-  const [saving,   setSaving]   = useState(false);
-  const [filter,   setFilter]   = useState("all");
-  const [reqTitle, setReqTitle] = useState("");
-  const [reqBody,  setReqBody]  = useState("");
-  const [error,    setError]    = useState(null);
+  const [members,   setMembers]  = useState([]);
+  const [requests,  setRequests] = useState([]);
+  const [intercs,   setIntercs]  = useState([]);
+  const [modal,     setModal]    = useState(null);
+  const [loading,   setLoading]  = useState(true);
+  const [saving,    setSaving]   = useState(false);
+  const [filter,    setFilter]   = useState("all");
+  const [reqTitle,  setReqTitle] = useState("");
+  const [reqBody,   setReqBody]  = useState("");
+  const [error,     setError]    = useState(null);
+  const [editName,  setEditName] = useState("");
+  const [editEmoji, setEditEmoji]= useState("🙏");
 
   const fetchAll = useCallback(async () => {
     try {
@@ -373,6 +375,26 @@ function AppMain({ session, onLogout }) {
 
   useEffect(() => { fetchAll(); }, []);
   useEffect(() => { const t = setInterval(fetchAll, 30000); return () => clearInterval(t); }, []);
+
+  async function saveProfile() {
+    if (!editName.trim()) return;
+    setSaving(true);
+    try {
+      await dbPatch("pgm_members", me.id, { name: editName.trim(), emoji: editEmoji }, token);
+      // Atualizar sessão local
+      const updatedMember = { ...me, name: editName.trim(), emoji: editEmoji };
+      const updatedSession = { ...session, member: updatedMember };
+      try { localStorage.setItem("pgm_session", JSON.stringify(updatedSession)); } catch {}
+      // Recarregar para refletir mudanças
+      await fetchAll();
+      setModal(null);
+      // Forçar reload para atualizar o header
+      window.location.reload();
+    } catch(e) {
+      setError(`Erro ao salvar perfil: ${e.message}`);
+    }
+    setSaving(false);
+  }
 
   async function addRequest() {
     if (!reqTitle.trim()) return;
@@ -440,7 +462,9 @@ function AppMain({ session, onLogout }) {
           <div style={{ marginTop:10, display:"inline-flex", alignItems:"center", gap:8, background:"rgba(255,255,255,0.12)", borderRadius:40, padding:"5px 14px 5px 10px" }}>
             <span style={{ fontSize:17 }}>{me.emoji}</span>
             <span style={{ fontSize:13, fontWeight:600 }}>{me.name}</span>
-            <button onClick={onLogout} style={{ background:"transparent", border:"1px solid rgba(255,255,255,.3)", color:"#fff", opacity:.8, cursor:"pointer", fontSize:12, padding:"2px 8px", marginLeft:6, borderRadius:20, fontFamily:"inherit" }}>Sair</button>
+            <button onClick={() => { setEditName(me.name); setEditEmoji(me.emoji); setModal("profile"); }}
+              style={{ background:"transparent", border:"1px solid rgba(255,255,255,.3)", color:"#fff", opacity:.8, cursor:"pointer", fontSize:12, padding:"2px 8px", borderRadius:20, fontFamily:"inherit" }}>✏️</button>
+            <button onClick={onLogout} style={{ background:"transparent", border:"1px solid rgba(255,255,255,.3)", color:"#fff", opacity:.8, cursor:"pointer", fontSize:12, padding:"2px 8px", borderRadius:20, fontFamily:"inherit" }}>Sair</button>
           </div>
         )}
       </div>
@@ -537,6 +561,33 @@ function AppMain({ session, onLogout }) {
             <div style={{ display:"flex", gap:10, marginTop:10 }}>
               <button className="btn-press" style={{ ...s.btnSm, flex:1, opacity:saving?.8:1 }} onClick={addRequest}>
                 {saving ? <Spinner/> : "Compartilhar"}
+              </button>
+              <button style={s.ghost} onClick={() => setModal(null)}>Cancelar</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {modal==="profile" && (
+        <div style={s.modal} onClick={e => e.target===e.currentTarget && setModal(null)}>
+          <div style={s.modalBox}>
+            <span style={s.mTitle}>✏️ Editar perfil</span>
+            <span style={{ ...s.label, marginBottom:8 }}>Seu emoji</span>
+            <div style={s.emojiGrid}>
+              {["🙏","✨","🌿","🕊️","💛","🌸","🌻","🦋","🌙","⭐","🫶","💫"].map(e => (
+                <button key={e} onClick={() => setEditEmoji(e)} style={{
+                  fontSize:22, background:editEmoji===e?"#E0F0FF":C.blueLight,
+                  border:`2px solid ${editEmoji===e?C.blue:"transparent"}`,
+                  borderRadius:12, padding:"6px 0", cursor:"pointer"
+                }}>{e}</button>
+              ))}
+            </div>
+            <input style={s.input} placeholder="Seu nome..." value={editName}
+              onChange={e => setEditName(e.target.value)}
+              onKeyDown={e => e.key==="Enter" && saveProfile()}/>
+            <div style={{ display:"flex", gap:10, marginTop:4 }}>
+              <button className="btn-press" style={{ ...s.btnSm, flex:1, opacity:saving?.8:1 }} onClick={saveProfile}>
+                {saving ? <Spinner/> : "Salvar"}
               </button>
               <button style={s.ghost} onClick={() => setModal(null)}>Cancelar</button>
             </div>
