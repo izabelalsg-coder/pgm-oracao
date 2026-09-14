@@ -349,7 +349,8 @@ function AppMain({ session, onLogout }) {
   const [modal,     setModal]    = useState(null);
   const [loading,   setLoading]  = useState(true);
   const [saving,    setSaving]   = useState(false);
-  const [filter,    setFilter]   = useState("all");
+  const [section,   setSection]  = useState("active"); // active | answered
+  const [onlyMine,  setOnlyMine] = useState(false);
   const [reqTitle,  setReqTitle] = useState("");
   const [reqBody,   setReqBody]  = useState("");
   const [error,     setError]    = useState(null);
@@ -442,11 +443,11 @@ function AppMain({ session, onLogout }) {
   }
 
   const member   = id => members.find(m => m.id===id);
-  const filtered = requests.filter(r =>
-    filter==="mine"     ? r.member_id===me?.id :
-    filter==="answered" ? r.answered :
-    filter==="pending"  ? !r.answered : true
-  );
+  const filtered = requests.filter(r => {
+    if (section === "active")   return !r.answered && (!onlyMine || r.member_id === me?.id);
+    if (section === "answered") return r.answered;
+    return true;
+  });
 
   if (loading) return (
     <div style={{ ...s.app, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:12 }}>
@@ -497,19 +498,34 @@ function AppMain({ session, onLogout }) {
         )}
       </div>
 
-      <div style={{ ...s.section, display:"flex", alignItems:"center", justifyContent:"space-between", flexWrap:"wrap", gap:8, paddingTop:14 }}>
-        <div style={{ display:"flex", gap:6 }}>
-          {[["all","Todos"],["pending","Em espera"],["mine","Meus"],["answered","Respondidos"]].map(([v,l]) => (
-            <button key={v} onClick={() => setFilter(v)}
-              style={{ ...s.ghost, ...(filter===v ? { background:C.blueLight, borderColor:C.blue, color:C.text } : {}) }}>
+      <div style={{ ...s.section, paddingTop:14 }}>
+        {/* Abas principais */}
+        <div style={{ display:"flex", borderBottom:`1.5px solid ${C.border}`, marginBottom:14 }}>
+          {[["active","🙏 Ativos"],["answered","✅ Respondidos"]].map(([v,l]) => (
+            <button key={v} onClick={() => { setSection(v); setOnlyMine(false); }}
+              style={{ flex:1, padding:"10px 0", border:"none", background:"transparent", cursor:"pointer",
+                fontFamily:"inherit", fontSize:14, fontWeight:700,
+                color: section===v ? C.blue : C.muted,
+                borderBottom: section===v ? `2.5px solid ${C.blue}` : "2.5px solid transparent",
+                marginBottom:-1.5 }}>
               {l}
             </button>
           ))}
         </div>
-        <button className="btn-press" style={s.btnSm} onClick={() => setModal("request")}>+ Novo pedido</button>
+
+        {/* Filtro "Meus" + botão novo pedido */}
+        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:10 }}>
+          {section === "active" ? (
+            <button onClick={() => setOnlyMine(p => !p)}
+              style={{ ...s.ghost, ...(onlyMine ? { background:C.blueLight, borderColor:C.blue, color:C.text } : {}) }}>
+              Meus pedidos
+            </button>
+          ) : <span/>}
+          <button className="btn-press" style={s.btnSm} onClick={() => setModal("request")}>+ Novo pedido</button>
+        </div>
       </div>
 
-      <div style={{ ...s.section, paddingTop:14 }}>
+      <div style={{ padding:"0 16px" }}>
         {filtered.length===0 && (
           <p style={{ textAlign:"center", color:C.muted, padding:"28px 0", fontStyle:"italic", fontSize:14 }}>Nenhum pedido aqui ainda. 💛</p>
         )}
