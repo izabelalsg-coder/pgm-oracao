@@ -4,7 +4,8 @@
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>PGM - Pedidos de Oração</title>
-  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Lora:wght@400;600&display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Roboto+Slab:wght@600;700&display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet"/>
   <link rel="manifest" href="manifest.json"/>
   <meta name="theme-color" content="#1A3550"/>
   <meta name="mobile-web-app-capable" content="yes"/>
@@ -13,7 +14,7 @@
   <meta name="apple-mobile-web-app-title" content="PGM Oração"/>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    body { background: #F0F7FF; font-family: 'Lora', Georgia, serif; }
+    body { background: #F0F4FF; font-family: 'Roboto', sans-serif; }
     ::-webkit-scrollbar { width: 0; }
     @keyframes slideUp { from{transform:translateY(100%);opacity:0} to{transform:translateY(0);opacity:1} }
     @keyframes fadeIn  { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
@@ -67,35 +68,52 @@ const dbPatch    = (t, id, b, tk) => api("PATCH", `/rest/v1/${t}?id=eq.${id}`, b
 const dbDel      = (t, p, tk)  => api("DELETE", `/rest/v1/${t}${p}`, null, tk);
 
 const C = {
-  bg:"#F0F7FF", card:"#F7FBFF", border:"#BDD8F5",
-  blue:"#3A86C8", blueLight:"#D6EAFA", text:"#1A3550",
-  muted:"#5A89AA", answered:"#2E7D52", answeredBg:"#E6F4ED",
-  error:"#C0392B", errorBg:"#FDECEA",
+  primary:    "#1565C0",
+  onPrimary:  "#FFFFFF",
+  primCont:   "#D6E4FF",
+  onPrimCont: "#001849",
+  surface:    "#F8F9FF",
+  surfVar:    "#E1E2EC",
+  onSurface:  "#1B1B1F",
+  outlineVar: "#C4C6D0",
+  error:      "#B3261E",
+  errorBg:    "#F9DEDC",
+  answered:   "#2E7D52",
+  answeredBg: "#DCFCE7",
+  bg:         "#F0F4FF",
+  card:       "#FFFFFF",
+  border:     "#C4C6D0",
+  blue:       "#1565C0",
+  blueLight:  "#D6E4FF",
+  text:       "#1B1B1F",
+  muted:      "#44464F",
+  outline:    "#74777F",
 };
 const s = {
-  app:     { minHeight:"100vh", background:"radial-gradient(ellipse at 60% 0%,#D6EAFA,#F0F7FF 60%,#E2F0FB)", color:C.text, paddingBottom:80 },
-  header:  { background:"linear-gradient(135deg,#1A3550,#2E6EA6)", color:"#EFF8FF", padding:"28px 20px 18px", textAlign:"center", position:"sticky", top:0, zIndex:10, boxShadow:"0 4px 24px rgba(26,53,80,.2)" },
-  htitle:  { fontSize:22, fontWeight:700, fontFamily:"'Playfair Display',Georgia,serif", letterSpacing:".03em" },
-  hsub:    { fontSize:12, opacity:.65, marginTop:4, letterSpacing:".08em" },
-  section: { padding:"18px 16px 0" },
-  label:   { fontSize:11, fontWeight:700, letterSpacing:".14em", textTransform:"uppercase", color:C.muted, marginBottom:10, display:"block" },
-  card:    { background:C.card, border:`1.5px solid ${C.border}`, borderRadius:16, padding:"14px 16px", marginBottom:10, boxShadow:"0 2px 12px rgba(80,140,200,.07)" },
-  chip:    { display:"inline-flex", alignItems:"center", gap:8, background:C.blueLight, border:`1.5px solid ${C.border}`, borderRadius:40, padding:"8px 14px 8px 10px", fontSize:14, fontWeight:600, margin:3 },
-  btn:     { background:"linear-gradient(135deg,#3A86C8,#6DB3E8)", color:"#fff", border:"none", borderRadius:40, padding:"12px 24px", fontSize:15, fontWeight:700, cursor:"pointer", boxShadow:"0 2px 10px rgba(58,134,200,.3)", width:"100%", display:"block" },
-  btnSm:   { background:"linear-gradient(135deg,#3A86C8,#6DB3E8)", color:"#fff", border:"none", borderRadius:40, padding:"10px 22px", fontSize:14, fontWeight:700, cursor:"pointer", boxShadow:"0 2px 10px rgba(58,134,200,.25)" },
-  ghost:   { background:"transparent", border:`1.5px solid ${C.border}`, color:C.muted, borderRadius:40, padding:"8px 14px", fontSize:13, fontWeight:600, cursor:"pointer" },
-  answBtn: { background:C.answeredBg, border:`1.5px solid ${C.answered}`, color:C.answered, borderRadius:40, padding:"7px 14px", fontSize:13, fontWeight:700, cursor:"pointer" },
-  input:   { width:"100%", background:"#F0F8FF", border:`1.5px solid ${C.border}`, borderRadius:12, padding:"12px 14px", fontSize:15, color:C.text, outline:"none", marginBottom:10, display:"block" },
-  textarea:{ width:"100%", background:"#F0F8FF", border:`1.5px solid ${C.border}`, borderRadius:12, padding:"12px 14px", fontSize:15, color:C.text, outline:"none", minHeight:80, resize:"vertical", display:"block" },
-  modal:   { position:"fixed", inset:0, background:"rgba(10,30,60,.45)", zIndex:100, display:"flex", alignItems:"flex-end", justifyContent:"center" },
-  modalBox:{ background:C.card, borderRadius:"20px 20px 0 0", padding:"24px 20px 40px", width:"100%", maxWidth:480, boxShadow:"0 -8px 40px rgba(26,53,80,.18)", animation:"slideUp .25s ease" },
-  mTitle:  { fontFamily:"'Playfair Display',Georgia,serif", fontSize:20, fontWeight:700, marginBottom:14, color:C.text, display:"block" },
-  divider: { border:"none", borderTop:`1px solid ${C.border}`, margin:"12px 0" },
-  answTag: { display:"inline-block", background:C.answeredBg, borderRadius:20, padding:"2px 9px", fontSize:12, fontWeight:700, color:C.answered },
+  app:      { minHeight:"100vh", background:"#F0F4FF", color:"#1B1B1F", paddingBottom:80, fontFamily:"'Roboto',sans-serif" },
+  header:   { background:"#1565C0", color:"#FFFFFF", padding:"20px 16px 14px", textAlign:"center", position:"sticky", top:0, zIndex:10, boxShadow:"0 2px 4px rgba(0,0,0,.2),0 4px 8px rgba(0,0,0,.1)" },
+  htitle:   { fontSize:22, fontWeight:700, fontFamily:"'Roboto Slab',serif", letterSpacing:".01em" },
+  hsub:     { fontSize:12, opacity:.85, marginTop:3, letterSpacing:".03em" },
+  section:  { padding:"16px 16px 0" },
+  label:    { fontSize:11, fontWeight:700, letterSpacing:".12em", textTransform:"uppercase", color:"#44464F", marginBottom:8, display:"block" },
+  card:     { background:"#FFFFFF", borderRadius:12, padding:"16px", marginBottom:8, boxShadow:"0 1px 2px rgba(0,0,0,.08),0 2px 6px rgba(0,0,0,.06)" },
+  chip:     { display:"inline-flex", alignItems:"center", gap:6, background:"#E1E2EC", border:"1px solid #C4C6D0", borderRadius:8, padding:"6px 12px 6px 10px", fontSize:14, fontWeight:500, margin:3 },
+  btn:      { background:"#1565C0", color:"#FFFFFF", border:"none", borderRadius:100, padding:"12px 24px", fontSize:15, fontWeight:500, cursor:"pointer", boxShadow:"0 1px 2px rgba(0,0,0,.2),0 2px 6px rgba(0,0,0,.12)", width:"100%", display:"block", letterSpacing:".04em", fontFamily:"'Roboto',sans-serif" },
+  btnSm:    { background:"#1565C0", color:"#FFFFFF", border:"none", borderRadius:100, padding:"10px 24px", fontSize:14, fontWeight:500, cursor:"pointer", letterSpacing:".04em", boxShadow:"0 1px 2px rgba(0,0,0,.2)", fontFamily:"'Roboto',sans-serif" },
+  btnTonal: { background:"#D6E4FF", color:"#001849", border:"none", borderRadius:100, padding:"10px 24px", fontSize:14, fontWeight:500, cursor:"pointer", letterSpacing:".04em", fontFamily:"'Roboto',sans-serif" },
+  ghost:    { background:"transparent", border:"1px solid #74777F", color:"#1565C0", borderRadius:100, padding:"8px 16px", fontSize:13, fontWeight:500, cursor:"pointer", letterSpacing:".04em", fontFamily:"'Roboto',sans-serif" },
+  answBtn:  { background:"#DCFCE7", border:"1px solid #2E7D52", color:"#2E7D52", borderRadius:100, padding:"8px 16px", fontSize:13, fontWeight:700, cursor:"pointer", fontFamily:"'Roboto',sans-serif" },
+  input:    { width:"100%", background:"#E1E2EC", border:"none", borderBottom:"2px solid #74777F", borderRadius:"4px 4px 0 0", padding:"12px 14px", fontSize:15, color:"#1B1B1F", outline:"none", marginBottom:10, display:"block", fontFamily:"'Roboto',sans-serif" },
+  textarea: { width:"100%", background:"#E1E2EC", border:"1px solid #C4C6D0", borderRadius:4, padding:"12px 14px", fontSize:15, color:"#1B1B1F", outline:"none", minHeight:80, resize:"vertical", display:"block", fontFamily:"'Roboto',sans-serif" },
+  modal:    { position:"fixed", inset:0, background:"rgba(0,0,0,.4)", zIndex:100, display:"flex", alignItems:"flex-end", justifyContent:"center" },
+  modalBox: { background:"#FFFFFF", borderRadius:"28px 28px 0 0", padding:"28px 20px 40px", width:"100%", maxWidth:480, boxShadow:"0 -4px 16px rgba(0,0,0,.12)", animation:"slideUp .25s ease" },
+  mTitle:   { fontFamily:"'Roboto Slab',serif", fontSize:20, fontWeight:600, marginBottom:16, color:"#1B1B1F", display:"block" },
+  divider:  { border:"none", borderTop:"1px solid #C4C6D0", margin:"12px 0" },
+  answTag:  { display:"inline-block", background:"#DCFCE7", borderRadius:100, padding:"3px 10px", fontSize:12, fontWeight:700, color:"#2E7D52" },
   emojiGrid:{ display:"grid", gridTemplateColumns:"repeat(6,1fr)", gap:8, marginBottom:14 },
-  errBox:  { background:C.errorBg, border:`1px solid #F1B0A8`, borderRadius:10, padding:"10px 14px", fontSize:13, color:C.error, marginBottom:10 },
-  tab:     { flex:1, padding:"10px 0", border:"none", background:"transparent", fontSize:14, fontWeight:600, cursor:"pointer", borderBottom:"2px solid transparent", color:C.muted },
-  tabAct:  { borderBottom:`2px solid ${C.blue}`, color:C.blue },
+  errBox:   { background:"#F9DEDC", border:"1px solid #F1AEA8", borderRadius:12, padding:"12px 14px", fontSize:13, color:"#B3261E", marginBottom:10 },
+  tab:      { flex:1, padding:"10px 0", border:"none", background:"transparent", fontSize:14, fontWeight:500, cursor:"pointer", borderBottom:"2px solid transparent", color:"#44464F", fontFamily:"'Roboto',sans-serif", letterSpacing:".04em" },
+  tabAct:   { borderBottom:"2px solid #1565C0", color:"#1565C0", fontWeight:700 },
 };
 
 const EMOJIS = ["🙏","✨","🌿","🕊️","💛","🌸","🌻","🦋","🌙","⭐","🫶","💫"];
@@ -142,7 +160,7 @@ function InstallBanner() {
   if (!show) return null;
 
   return (
-    <div style={{ marginTop:14, background:C.blueLight, border:`1.5px solid ${C.border}`, borderRadius:14, padding:"14px 16px" }}>
+    <div style={{ marginTop:14, background:C.blueLight, border:"1px solid #C4C6D0", borderRadius:14, padding:"14px 16px" }}>
       <p style={{ fontWeight:700, fontSize:14, color:C.text, marginBottom:6 }}>📲 Instalar como app</p>
       {isIOS ? (
         <p style={{ fontSize:13, color:C.muted, lineHeight:1.7 }}>
@@ -222,10 +240,10 @@ function AuthScreen({ onAuth }) {
       <div style={{ width:"100%", maxWidth:400 }}>
         <div style={{ textAlign:"center", marginBottom:32 }}>
           <div style={{ fontSize:52 }}>🕊️</div>
-          <h1 style={{ fontFamily:"'Playfair Display',Georgia,serif", fontSize:26, color:C.text, fontWeight:700, marginTop:8 }}>PGM</h1>
+          <h1 style={{ fontFamily:"'Roboto Slab',serif", fontSize:26, color:C.text, fontWeight:700, marginTop:8 }}>PGM</h1>
           <p style={{ color:C.muted, fontSize:14, marginTop:4 }}>Pedidos de Oração</p>
         </div>
-        <div style={{ ...s.card, padding:"24px 20px 28px" }}>
+        <div style={{ ...s.card, padding:"24px 20px 28px", borderRadius:16, boxShadow:"0 2px 8px rgba(0,0,0,.1)" }}>
           <div style={{ display:"flex", borderBottom:`1px solid ${C.border}`, marginBottom:20 }}>
             <button style={{ ...s.tab, ...(tab==="login"  ? s.tabAct : {}) }} onClick={() => { setTab("login");  setErr(""); }}>Entrar</button>
             <button style={{ ...s.tab, ...(tab==="signup" ? s.tabAct : {}) }} onClick={() => { setTab("signup"); setErr(""); }}>Cadastrar</button>
@@ -258,7 +276,7 @@ function AuthScreen({ onAuth }) {
             <span style={{ ...s.label, marginBottom:8 }}>Seu emoji no grupo</span>
             <div style={s.emojiGrid}>
               {EMOJIS.map(e => (
-                <button key={e} onClick={() => setEmoji(e)} style={{ fontSize:22, background:emoji===e?"#E0F0FF":C.blueLight, border:`2px solid ${emoji===e?C.blue:"transparent"}`, borderRadius:12, padding:"6px 0", cursor:"pointer" }}>{e}</button>
+                <button key={e} onClick={() => setEmoji(e)} style={{ fontSize:22, background:emoji===e?"#D6E4FF":C.blueLight, border:`2px solid ${emoji===e?C.blue:"transparent"}`, borderRadius:12, padding:"6px 0", cursor:"pointer" }}>{e}</button>
               ))}
             </div>
             <input style={s.input} placeholder="Seu nome no grupo..." value={name} onChange={e => setName(e.target.value)}/>
@@ -313,7 +331,7 @@ function ProfileSetup({ session, onDone, onLogout }) {
       <div style={{ width:"100%", maxWidth:400 }}>
         <div style={{ textAlign:"center", marginBottom:24 }}>
           <div style={{ fontSize:44 }}>👤</div>
-          <h2 style={{ fontFamily:"'Playfair Display',Georgia,serif", fontSize:22, color:C.text, marginTop:8 }}>Complete seu perfil</h2>
+          <h2 style={{ fontFamily:"'Roboto Slab',serif", fontSize:22, color:C.text, marginTop:8 }}>Complete seu perfil</h2>
           <p style={{ color:C.muted, fontSize:13, marginTop:6 }}>Escolha como você vai aparecer no grupo</p>
         </div>
         <div style={{ ...s.card, padding:"24px 20px" }}>
@@ -321,7 +339,7 @@ function ProfileSetup({ session, onDone, onLogout }) {
           <span style={{ ...s.label, marginBottom:8 }}>Seu emoji</span>
           <div style={s.emojiGrid}>
             {EMOJIS.map(e => (
-              <button key={e} onClick={() => setEmoji(e)} style={{ fontSize:22, background:emoji===e?"#E0F0FF":C.blueLight, border:`2px solid ${emoji===e?C.blue:"transparent"}`, borderRadius:12, padding:"6px 0", cursor:"pointer" }}>{e}</button>
+              <button key={e} onClick={() => setEmoji(e)} style={{ fontSize:22, background:emoji===e?"#D6E4FF":C.blueLight, border:`2px solid ${emoji===e?C.blue:"transparent"}`, borderRadius:12, padding:"6px 0", cursor:"pointer" }}>{e}</button>
             ))}
           </div>
           <input style={s.input} placeholder="Seu nome no grupo..." value={name}
@@ -475,7 +493,7 @@ function AppMain({ session, onLogout }) {
       {error && (
         <div style={{ ...s.errBox, margin:"12px 16px 0" }}>
           ⚠️ {error}
-          <button onClick={() => setError(null)} style={{ float:"right", background:"none", border:"none", cursor:"pointer", color:C.error, fontSize:16 }}>×</button>
+          <button onClick={() => setError(null)} style={{ float:"right", background:"none", border:"none", cursor:"pointer", color:"#B3261E", fontSize:16 }}>×</button>
         </div>
       )}
 
@@ -489,7 +507,7 @@ function AppMain({ session, onLogout }) {
         {showMembers && (
           <div style={{ display:"flex", flexWrap:"wrap", marginTop:4 }}>
             {members.map(m => (
-              <div key={m.id} style={{ ...s.chip, cursor:"default", ...(m.id===me?.id ? { background:"linear-gradient(135deg,#3A86C8,#6DB3E8)", color:"#fff", border:"1.5px solid #3A86C8" } : {}) }}>
+              <div key={m.id} style={{ ...s.chip, cursor:"default", ...(m.id===me?.id ? { background:"#1565C0", color:"#fff", border:"1.5px solid #3A86C8" } : {}) }}>
                 <span style={{ fontSize:18 }}>{m.emoji}</span>
                 <span>{m.name}{m.id===me?.id ? " (você)" : ""}</span>
               </div>
@@ -551,7 +569,7 @@ function AppMain({ session, onLogout }) {
               <hr style={s.divider}/>
               <div style={{ display:"flex", alignItems:"center", gap:8, flexWrap:"wrap" }}>
                 <button onClick={() => togglePray(req.id)}
-                  style={{ ...s.ghost, ...(iPrayed ? { background:"#E0F0FF", borderColor:C.blue, color:"#1A5C8A" } : {}) }}>
+                  style={{ ...s.ghost, ...(iPrayed ? { background:"#D6E4FF", borderColor:"#1565C0", color:"#001849" } : {}) }}>
                   🙏 {iPrayed ? "Orei por isso" : "Orar por isso"}
                 </button>
                 {reqI.length>0 && (
@@ -565,7 +583,7 @@ function AppMain({ session, onLogout }) {
                     {req.answered ? "↩ Desfazer" : "✅ Respondida!"}
                   </button>
                   <button onClick={() => deleteRequest(req.id)}
-                    style={{ ...s.ghost, color:C.error, borderColor:"#F1B0A8" }}>🗑</button>
+                    style={{ ...s.ghost, color:"#B3261E", borderColor:"#F1B0A8" }}>🗑</button>
                 </>}
               </div>
               <RequestUpdates
@@ -589,13 +607,13 @@ function AppMain({ session, onLogout }) {
       {activeTab === "meetings" && <MeetingsTab session={session} members={members}/>}
 
       {/* Bottom nav */}
-      <div style={{ position:"fixed", bottom:0, left:0, right:0, background:C.card, borderTop:`1.5px solid ${C.border}`, display:"flex", zIndex:20, boxShadow:"0 -2px 12px rgba(26,53,80,.08)" }}>
+      <div style={{ position:"fixed", bottom:0, left:0, right:0, background:"#FFFFFF", borderTop:"1px solid #C4C6D0", display:"flex", zIndex:20, boxShadow:"0 -2px 12px rgba(26,53,80,.08)" }}>
         {[["prayers","🙏","Orações"],["meetings","📅","Reuniões"]].map(([tab,icon,label]) => (
           <button key={tab} onClick={() => setActiveTab(tab)}
             style={{ flex:1, padding:"12px 0 10px", border:"none", background:"transparent", cursor:"pointer",
-              color: activeTab===tab ? C.blue : C.muted,
-              borderTop: activeTab===tab ? `2.5px solid ${C.blue}` : "2.5px solid transparent",
-              fontSize:11, fontWeight:700, letterSpacing:".06em", fontFamily:"'Lora',Georgia,serif",
+              color: activeTab===tab ? "#1565C0" : "#44464F",
+              borderTop: activeTab===tab ? "2.5px solid #1565C0" : "2.5px solid transparent",
+              fontSize:11, fontWeight:700, letterSpacing:".06em", fontFamily:"'Roboto',sans-serif",
               display:"flex", flexDirection:"column", alignItems:"center", gap:3 }}>
             <span style={{ fontSize:20 }}>{icon}</span>
             <span>{label}</span>
@@ -627,7 +645,7 @@ function AppMain({ session, onLogout }) {
             <div style={s.emojiGrid}>
               {["🙏","✨","🌿","🕊️","💛","🌸","🌻","🦋","🌙","⭐","🫶","💫"].map(e => (
                 <button key={e} onClick={() => setEditEmoji(e)} style={{
-                  fontSize:22, background:editEmoji===e?"#E0F0FF":C.blueLight,
+                  fontSize:22, background:editEmoji===e?"#D6E4FF":C.blueLight,
                   border:`2px solid ${editEmoji===e?C.blue:"transparent"}`,
                   borderRadius:12, padding:"6px 0", cursor:"pointer"
                 }}>{e}</button>
@@ -663,20 +681,20 @@ function ConfirmList({ confirms, member }) {
         const m = member(c.member_id);
         if (!m) return null;
         return (
-          <span key={c.id} style={{ display:"inline-flex", alignItems:"center", gap:4, background:C.blueLight, border:`1px solid ${C.border}`, borderRadius:20, padding:"2px 8px 2px 6px", fontSize:12 }}>
+          <span key={c.id} style={{ display:"inline-flex", alignItems:"center", gap:4, background:C.blueLight, border:"1px solid #C4C6D0", borderRadius:20, padding:"2px 8px 2px 6px", fontSize:12 }}>
             <span>{m.emoji}</span><span style={{ fontWeight:600 }}>{m.name}</span>
           </span>
         );
       })}
       {!expanded && extra > 0 && (
         <button onClick={() => setExpanded(true)}
-          style={{ fontSize:12, color:C.blue, fontWeight:700, background:"transparent", border:`1px solid ${C.border}`, borderRadius:20, padding:"2px 10px", cursor:"pointer", fontFamily:"inherit" }}>
+          style={{ fontSize:12, color:C.blue, fontWeight:700, background:"transparent", border:"1px solid #C4C6D0", borderRadius:20, padding:"2px 10px", cursor:"pointer", fontFamily:"inherit" }}>
           +{extra} ver todos
         </button>
       )}
       {expanded && confirms.length > LIMIT && (
         <button onClick={() => setExpanded(false)}
-          style={{ fontSize:12, color:C.muted, background:"transparent", border:`1px solid ${C.border}`, borderRadius:20, padding:"2px 10px", cursor:"pointer", fontFamily:"inherit" }}>
+          style={{ fontSize:12, color:C.muted, background:"transparent", border:"1px solid #C4C6D0", borderRadius:20, padding:"2px 10px", cursor:"pointer", fontFamily:"inherit" }}>
           ver menos
         </button>
       )}
@@ -742,7 +760,7 @@ function RequestUpdates({ requestId, isOwner, me, token, members }) {
       </button>
 
       {open && (
-        <div style={{ marginTop:8, borderLeft:`3px solid ${C.border}`, paddingLeft:12 }}>
+        <div style={{ marginTop:8, borderLeft:"3px solid #C4C6D0", paddingLeft:12 }}>
           {(updates||[]).length === 0 && (
             <p style={{ fontSize:13, color:C.muted, fontStyle:"italic", marginBottom:8 }}>Nenhuma atualização ainda.</p>
           )}
@@ -879,7 +897,7 @@ function MeetingsTab({ session, members }) {
       {error && (
         <div style={{ ...s.errBox, margin:"12px 16px 0" }}>
           ⚠️ {error}
-          <button onClick={() => setError(null)} style={{ float:"right", background:"none", border:"none", cursor:"pointer", color:C.error, fontSize:16 }}>×</button>
+          <button onClick={() => setError(null)} style={{ float:"right", background:"none", border:"none", cursor:"pointer", color:"#B3261E", fontSize:16 }}>×</button>
         </div>
       )}
 
@@ -904,9 +922,9 @@ function MeetingsTab({ session, members }) {
               <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", gap:8 }}>
                 <div style={{ flex:1 }}>
                   <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:4, flexWrap:"wrap" }}>
-                    <span style={{ fontWeight:700, fontSize:16, fontFamily:"'Playfair Display',Georgia,serif" }}>Reunião PGM</span>
+                    <span style={{ fontWeight:700, fontSize:16, fontFamily:"'Roboto Slab',serif" }}>Reunião PGM</span>
                     {isToday && (
-                      <span style={{ background:C.blue, color:"#fff", fontSize:11, fontWeight:700, borderRadius:20, padding:"2px 9px", letterSpacing:".04em" }}>HOJE</span>
+                      <span style={{ background:"#1565C0", color:"#FFFFFF", fontSize:11, fontWeight:700, borderRadius:20, padding:"2px 9px", letterSpacing:".04em" }}>HOJE</span>
                     )}
                   </div>
                   <div style={{ fontSize:13, color:C.muted, lineHeight:1.8 }}>
@@ -918,7 +936,7 @@ function MeetingsTab({ session, members }) {
                 </div>
                 <div style={{ display:"flex", gap:6 }}>
                   <button onClick={() => openEdit(m)} style={{ ...s.ghost, padding:"6px 10px", fontSize:14 }}>✏️</button>
-                  <button onClick={() => deleteMeeting(m.id)} style={{ ...s.ghost, padding:"6px 10px", fontSize:14, color:C.error, borderColor:"#F1B0A8" }}>🗑</button>
+                  <button onClick={() => deleteMeeting(m.id)} style={{ ...s.ghost, padding:"6px 10px", fontSize:14, color:"#B3261E", borderColor:"#F1B0A8" }}>🗑</button>
                 </div>
               </div>
 
@@ -926,7 +944,7 @@ function MeetingsTab({ session, members }) {
 
               <div style={{ display:"flex", alignItems:"center", gap:8, flexWrap:"wrap" }}>
                 <button onClick={() => toggleConfirm(m.id)}
-                  style={{ ...s.ghost, ...(iConfirmed ? { background:"#E0F0FF", borderColor:C.blue, color:"#1A5C8A" } : {}) }}>
+                  style={{ ...s.ghost, ...(iConfirmed ? { background:"#D6E4FF", borderColor:"#1565C0", color:"#001849" } : {}) }}>
                   ✅ {iConfirmed ? "Confirmei presença" : "Confirmar presença"}
                 </button>
                 {mtConfirms.length > 0 && (
