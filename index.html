@@ -102,11 +102,11 @@ function applyTheme(primary, dark) {
   const el = document.getElementById('pgm-theme');
   el.textContent = `:root {
     --cp: ${primary}; --cp-on: ${onP}; --cp-cont: ${cont}; --cp-cont-on: ${onCont};
-    --cs: ${dark?'#1C1B1F':'#F0F4FF'}; --cs-card: ${dark?'#2B2930':'#FFFFFF'}; --cs-var: ${dark?'#49454F':'#E1E2EC'};
-    --ct: ${dark?'#E6E1E5':'#1B1B1F'}; --ct-m: ${dark?'#CAC4D0':'#44464F'};
-    --co: ${dark?'#938F99':'#74777F'}; --co-var: ${dark?'#48464C':'#C4C6D0'};
+    --cs: ${dark?'#0F0F14':'#F0F4FF'}; --cs-card: ${dark?'#1E1D27':'#FFFFFF'}; --cs-var: ${dark?'#2C2B38':'#E1E2EC'};
+    --ct: ${dark?'#F0EFF8':'#1B1B1F'}; --ct-m: ${dark?'#C2C0D0':'#44464F'};
+    --co: ${dark?'#8A88A0':'#74777F'}; --co-var: ${dark?'#3A3848':'#C4C6D0'};
   }`;
-  document.body.style.background = dark ? '#1C1B1F' : '#F0F4FF';
+  document.body.style.background = dark ? '#0F0F14' : '#F0F4FF';
 }
 
 const C = {
@@ -137,7 +137,7 @@ const s = {
   hsub:     { fontSize:12, opacity:.85, marginTop:3, letterSpacing:".03em" },
   section:  { padding:"16px 16px 0" },
   label:    { fontSize:11, fontWeight:700, letterSpacing:".12em", textTransform:"uppercase", color:C.muted, marginBottom:8, display:"block" },
-  card:     { background:C.card, borderRadius:12, padding:"16px", marginBottom:8, boxShadow:"0 1px 2px rgba(0,0,0,.08),0 2px 6px rgba(0,0,0,.06)" },
+  card:     { background:C.card, borderRadius:12, padding:"16px", marginBottom:8, boxShadow:"0 1px 3px rgba(0,0,0,.25),0 2px 8px rgba(0,0,0,.2)", border:`1px solid ${C.outlineVar}` },
   chip:     { display:"inline-flex", alignItems:"center", gap:6, background:C.surfVar, border:`1px solid ${C.outlineVar}`, borderRadius:8, padding:"6px 12px 6px 10px", fontSize:14, fontWeight:500, margin:3 },
   btn:      { background:C.primary, color:C.onPrimary, border:"none", borderRadius:100, padding:"12px 24px", fontSize:15, fontWeight:500, cursor:"pointer", boxShadow:"0 1px 2px rgba(0,0,0,.2),0 2px 6px rgba(0,0,0,.12)", width:"100%", display:"block", letterSpacing:".04em", fontFamily:"'Roboto',sans-serif" },
   btnSm:    { background:C.primary, color:C.onPrimary, border:"none", borderRadius:100, padding:"10px 24px", fontSize:14, fontWeight:500, cursor:"pointer", letterSpacing:".04em", boxShadow:"0 1px 2px rgba(0,0,0,.2)", fontFamily:"'Roboto',sans-serif" },
