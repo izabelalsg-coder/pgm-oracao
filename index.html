@@ -552,6 +552,13 @@ function AppMain({ session, onLogout }) {
                     style={{ ...s.ghost, color:C.error, borderColor:"#F1B0A8" }}>🗑</button>
                 </>}
               </div>
+              <RequestUpdates
+                requestId={req.id}
+                isOwner={isOwner}
+                me={me}
+                token={token}
+                members={members}
+              />
             </div>
           );
         })}
@@ -658,6 +665,107 @@ function ConfirmList({ confirms, member }) {
         </button>
       )}
     </span>
+  );
+}
+
+
+// ── ATUALIZAÇÕES DO PEDIDO ────────────────────────────────────────────────────
+function RequestUpdates({ requestId, isOwner, me, token, members }) {
+  const [open,     setOpen]    = useState(false);
+  const [updates,  setUpdates] = useState(null); // null = não carregado ainda
+  const [newText,  setNewText] = useState("");
+  const [saving,   setSaving]  = useState(false);
+  const [count,    setCount]   = useState(null);
+
+  // Busca contagem ao montar
+  useEffect(() => {
+    dbGet("pgm_request_updates", `?request_id=eq.${requestId}&select=id`, token)
+      .then(r => setCount(r.length)).catch(() => {});
+  }, []);
+
+  async function load() {
+    const u = await dbGet("pgm_request_updates",
+      `?request_id=eq.${requestId}&order=created_at.asc&select=*`, token);
+    setUpdates(u);
+    setCount(u.length);
+  }
+
+  async function toggle() {
+    if (!open && updates === null) await load();
+    setOpen(p => !p);
+  }
+
+  async function post() {
+    if (!newText.trim()) return;
+    setSaving(true);
+    try {
+      const [u] = await dbPost("pgm_request_updates",
+        { request_id: requestId, member_id: me.id, text: newText.trim() }, token);
+      setUpdates(p => [...(p||[]), u]);
+      setCount(p => (p||0) + 1);
+      setNewText("");
+    } catch(e) { alert(`Erro: ${e.message}`); }
+    setSaving(false);
+  }
+
+  async function del(id) {
+    setUpdates(p => p.filter(u => u.id!==id));
+    setCount(p => Math.max(0,(p||1)-1));
+    await dbDel("pgm_request_updates", `?id=eq.${id}`, token);
+  }
+
+  const member = id => members.find(m => m.id===id);
+
+  return (
+    <div style={{ marginTop:8 }}>
+      <button onClick={toggle} style={{ background:"transparent", border:"none", cursor:"pointer",
+        fontSize:13, color:C.blue, fontWeight:600, padding:0, fontFamily:"inherit",
+        display:"flex", alignItems:"center", gap:5 }}>
+        <span>📝 Atualizações{count !== null ? ` (${count})` : ""}</span>
+        <span style={{ fontSize:11 }}>{open ? "▲" : "▼"}</span>
+      </button>
+
+      {open && (
+        <div style={{ marginTop:8, borderLeft:`3px solid ${C.border}`, paddingLeft:12 }}>
+          {(updates||[]).length === 0 && (
+            <p style={{ fontSize:13, color:C.muted, fontStyle:"italic", marginBottom:8 }}>Nenhuma atualização ainda.</p>
+          )}
+          {(updates||[]).map(u => {
+            const auth = member(u.member_id);
+            return (
+              <div key={u.id} style={{ marginBottom:10 }}>
+                <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", gap:8 }}>
+                  <div style={{ display:"flex", alignItems:"center", gap:5 }}>
+                    <span style={{ fontSize:15 }}>{auth?.emoji||"🙏"}</span>
+                    <span style={{ fontSize:12, fontWeight:700, color:C.text }}>{auth?.name}</span>
+                    <span style={{ fontSize:11, color:C.muted }}>· {timeAgo(u.created_at)}</span>
+                  </div>
+                  {isOwner && (
+                    <button onClick={() => del(u.id)}
+                      style={{ background:"none", border:"none", cursor:"pointer", color:C.muted, fontSize:13, padding:0 }}>🗑</button>
+                  )}
+                </div>
+                <p style={{ fontSize:14, lineHeight:1.6, color:C.text, marginTop:3 }}>{u.text}</p>
+              </div>
+            );
+          })}
+
+          {isOwner && (
+            <div style={{ marginTop:6 }}>
+              <textarea
+                style={{ ...s.textarea, minHeight:60, fontSize:13, marginBottom:6 }}
+                placeholder="Poste uma atualização..."
+                value={newText}
+                onChange={e => setNewText(e.target.value)}/>
+              <button onClick={post}
+                style={{ ...s.btnSm, fontSize:13, padding:"8px 18px", opacity:saving?.8:1 }}>
+                {saving ? <Spinner/> : "Publicar"}
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
   );
 }
 
