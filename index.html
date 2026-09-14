@@ -4,6 +4,14 @@
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>PGM - Pedidos de Oração</title>
+  <style id="pgm-theme">
+    :root {
+      --cp: #1565C0; --cp-on: #FFFFFF; --cp-cont: #D6E4FF; --cp-cont-on: #001849;
+      --cs: #F0F4FF; --cs-card: #FFFFFF; --cs-var: #E1E2EC;
+      --ct: #1B1B1F; --ct-m: #44464F;
+      --co: #74777F; --co-var: #C4C6D0;
+    }
+  </style>
   <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Roboto+Slab:wght@600;700&display=swap" rel="stylesheet"/>
   <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet"/>
   <link rel="manifest" href="manifest.json"/>
@@ -67,53 +75,86 @@ const dbPost     = (t, b, tk)  => api("POST",   `/rest/v1/${t}`, b, tk);
 const dbPatch    = (t, id, b, tk) => api("PATCH", `/rest/v1/${t}?id=eq.${id}`, b, tk);
 const dbDel      = (t, p, tk)  => api("DELETE", `/rest/v1/${t}${p}`, null, tk);
 
+// ── TEMA ─────────────────────────────────────────────────────────────────────
+const THEME_PRESETS = [
+  { name:"Azul",     p:"#1565C0" },
+  { name:"Índigo",   p:"#283593" },
+  { name:"Roxo",     p:"#6A1B9A" },
+  { name:"Rosa",     p:"#AD1457" },
+  { name:"Vermelho", p:"#C62828" },
+  { name:"Laranja",  p:"#E65100" },
+  { name:"Verde",    p:"#2E7D32" },
+  { name:"Teal",     p:"#00695C" },
+];
+
+function hexToRgb(h) {
+  return [parseInt(h.slice(1,3),16), parseInt(h.slice(3,5),16), parseInt(h.slice(5,7),16)];
+}
+function toHex(r,g,b) {
+  return '#'+[r,g,b].map(v=>Math.max(0,Math.min(255,Math.round(v))).toString(16).padStart(2,'0')).join('');
+}
+function applyTheme(primary, dark) {
+  const [r,g,b] = hexToRgb(primary);
+  const lum = (r*299+g*587+b*114)/1000;
+  const onP = lum > 140 ? "#000000" : "#FFFFFF";
+  const cont  = toHex(r+(255-r)*.78, g+(255-g)*.78, b+(255-b)*.78);
+  const onCont= toHex(r*.25, g*.25, b*.25);
+  const el = document.getElementById('pgm-theme');
+  el.textContent = `:root {
+    --cp: ${primary}; --cp-on: ${onP}; --cp-cont: ${cont}; --cp-cont-on: ${onCont};
+    --cs: ${dark?'#1C1B1F':'#F0F4FF'}; --cs-card: ${dark?'#2B2930':'#FFFFFF'}; --cs-var: ${dark?'#49454F':'#E1E2EC'};
+    --ct: ${dark?'#E6E1E5':'#1B1B1F'}; --ct-m: ${dark?'#CAC4D0':'#44464F'};
+    --co: ${dark?'#938F99':'#74777F'}; --co-var: ${dark?'#48464C':'#C4C6D0'};
+  }`;
+  document.body.style.background = dark ? '#1C1B1F' : '#F0F4FF';
+}
+
 const C = {
-  primary:    "#1565C0",
-  onPrimary:  "#FFFFFF",
-  primCont:   "#D6E4FF",
-  onPrimCont: "#001849",
-  surface:    "#F8F9FF",
-  surfVar:    "#E1E2EC",
-  onSurface:  "#1B1B1F",
-  outlineVar: "#C4C6D0",
-  error:      "#B3261E",
-  errorBg:    "#F9DEDC",
+  primary:    "var(--cp)",
+  onPrimary:  "var(--cp-on)",
+  primCont:   "var(--cp-cont)",
+  onPrimCont: "var(--cp-cont-on)",
+  bg:         "var(--cs)",
+  card:       "var(--cs-card)",
+  surfVar:    "var(--cs-var)",
+  text:       "var(--ct)",
+  muted:      "var(--ct-m)",
+  outline:    "var(--co)",
+  outlineVar: "var(--co-var)",
+  border:     "var(--co-var)",
+  blue:       "var(--cp)",
+  blueLight:  "var(--cp-cont)",
+  surface:    "var(--cs)",
   answered:   "#2E7D52",
   answeredBg: "#DCFCE7",
-  bg:         "#F0F4FF",
-  card:       "#FFFFFF",
-  border:     "#C4C6D0",
-  blue:       "#1565C0",
-  blueLight:  "#D6E4FF",
-  text:       "#1B1B1F",
-  muted:      "#44464F",
-  outline:    "#74777F",
+  error:      "#B3261E",
+  errorBg:    "#F9DEDC",
 };
 const s = {
-  app:      { minHeight:"100vh", background:"#F0F4FF", color:"#1B1B1F", paddingBottom:80, fontFamily:"'Roboto',sans-serif" },
-  header:   { background:"#1565C0", color:"#FFFFFF", padding:"20px 16px 14px", textAlign:"center", position:"sticky", top:0, zIndex:10, boxShadow:"0 2px 4px rgba(0,0,0,.2),0 4px 8px rgba(0,0,0,.1)" },
+  app:      { minHeight:"100vh", background:C.bg, color:C.text, paddingBottom:80, fontFamily:"'Roboto',sans-serif" },
+  header:   { background:C.primary, color:C.onPrimary, padding:"20px 16px 14px", textAlign:"center", position:"sticky", top:0, zIndex:10, boxShadow:"0 2px 4px rgba(0,0,0,.2),0 4px 8px rgba(0,0,0,.1)" },
   htitle:   { fontSize:22, fontWeight:700, fontFamily:"'Roboto Slab',serif", letterSpacing:".01em" },
   hsub:     { fontSize:12, opacity:.85, marginTop:3, letterSpacing:".03em" },
   section:  { padding:"16px 16px 0" },
-  label:    { fontSize:11, fontWeight:700, letterSpacing:".12em", textTransform:"uppercase", color:"#44464F", marginBottom:8, display:"block" },
-  card:     { background:"#FFFFFF", borderRadius:12, padding:"16px", marginBottom:8, boxShadow:"0 1px 2px rgba(0,0,0,.08),0 2px 6px rgba(0,0,0,.06)" },
-  chip:     { display:"inline-flex", alignItems:"center", gap:6, background:"#E1E2EC", border:"1px solid #C4C6D0", borderRadius:8, padding:"6px 12px 6px 10px", fontSize:14, fontWeight:500, margin:3 },
-  btn:      { background:"#1565C0", color:"#FFFFFF", border:"none", borderRadius:100, padding:"12px 24px", fontSize:15, fontWeight:500, cursor:"pointer", boxShadow:"0 1px 2px rgba(0,0,0,.2),0 2px 6px rgba(0,0,0,.12)", width:"100%", display:"block", letterSpacing:".04em", fontFamily:"'Roboto',sans-serif" },
-  btnSm:    { background:"#1565C0", color:"#FFFFFF", border:"none", borderRadius:100, padding:"10px 24px", fontSize:14, fontWeight:500, cursor:"pointer", letterSpacing:".04em", boxShadow:"0 1px 2px rgba(0,0,0,.2)", fontFamily:"'Roboto',sans-serif" },
-  btnTonal: { background:"#D6E4FF", color:"#001849", border:"none", borderRadius:100, padding:"10px 24px", fontSize:14, fontWeight:500, cursor:"pointer", letterSpacing:".04em", fontFamily:"'Roboto',sans-serif" },
-  ghost:    { background:"transparent", border:"1px solid #74777F", color:"#1565C0", borderRadius:100, padding:"8px 16px", fontSize:13, fontWeight:500, cursor:"pointer", letterSpacing:".04em", fontFamily:"'Roboto',sans-serif" },
+  label:    { fontSize:11, fontWeight:700, letterSpacing:".12em", textTransform:"uppercase", color:C.muted, marginBottom:8, display:"block" },
+  card:     { background:C.card, borderRadius:12, padding:"16px", marginBottom:8, boxShadow:"0 1px 2px rgba(0,0,0,.08),0 2px 6px rgba(0,0,0,.06)" },
+  chip:     { display:"inline-flex", alignItems:"center", gap:6, background:C.surfVar, border:`1px solid ${C.outlineVar}`, borderRadius:8, padding:"6px 12px 6px 10px", fontSize:14, fontWeight:500, margin:3 },
+  btn:      { background:C.primary, color:C.onPrimary, border:"none", borderRadius:100, padding:"12px 24px", fontSize:15, fontWeight:500, cursor:"pointer", boxShadow:"0 1px 2px rgba(0,0,0,.2),0 2px 6px rgba(0,0,0,.12)", width:"100%", display:"block", letterSpacing:".04em", fontFamily:"'Roboto',sans-serif" },
+  btnSm:    { background:C.primary, color:C.onPrimary, border:"none", borderRadius:100, padding:"10px 24px", fontSize:14, fontWeight:500, cursor:"pointer", letterSpacing:".04em", boxShadow:"0 1px 2px rgba(0,0,0,.2)", fontFamily:"'Roboto',sans-serif" },
+  btnTonal: { background:C.primCont, color:C.onPrimCont, border:"none", borderRadius:100, padding:"10px 24px", fontSize:14, fontWeight:500, cursor:"pointer", letterSpacing:".04em", fontFamily:"'Roboto',sans-serif" },
+  ghost:    { background:"transparent", border:`1px solid ${C.outline}`, color:C.primary, borderRadius:100, padding:"8px 16px", fontSize:13, fontWeight:500, cursor:"pointer", letterSpacing:".04em", fontFamily:"'Roboto',sans-serif" },
   answBtn:  { background:"#DCFCE7", border:"1px solid #2E7D52", color:"#2E7D52", borderRadius:100, padding:"8px 16px", fontSize:13, fontWeight:700, cursor:"pointer", fontFamily:"'Roboto',sans-serif" },
-  input:    { width:"100%", background:"#E1E2EC", border:"none", borderBottom:"2px solid #74777F", borderRadius:"4px 4px 0 0", padding:"12px 14px", fontSize:15, color:"#1B1B1F", outline:"none", marginBottom:10, display:"block", fontFamily:"'Roboto',sans-serif" },
-  textarea: { width:"100%", background:"#E1E2EC", border:"1px solid #C4C6D0", borderRadius:4, padding:"12px 14px", fontSize:15, color:"#1B1B1F", outline:"none", minHeight:80, resize:"vertical", display:"block", fontFamily:"'Roboto',sans-serif" },
+  input:    { width:"100%", background:C.surfVar, border:"none", borderBottom:`2px solid ${C.outline}`, borderRadius:"4px 4px 0 0", padding:"12px 14px", fontSize:15, color:C.text, outline:"none", marginBottom:10, display:"block", fontFamily:"'Roboto',sans-serif" },
+  textarea: { width:"100%", background:C.surfVar, border:`1px solid ${C.outlineVar}`, borderRadius:4, padding:"12px 14px", fontSize:15, color:C.text, outline:"none", minHeight:80, resize:"vertical", display:"block", fontFamily:"'Roboto',sans-serif" },
   modal:    { position:"fixed", inset:0, background:"rgba(0,0,0,.4)", zIndex:100, display:"flex", alignItems:"flex-end", justifyContent:"center" },
-  modalBox: { background:"#FFFFFF", borderRadius:"28px 28px 0 0", padding:"28px 20px 40px", width:"100%", maxWidth:480, boxShadow:"0 -4px 16px rgba(0,0,0,.12)", animation:"slideUp .25s ease" },
-  mTitle:   { fontFamily:"'Roboto Slab',serif", fontSize:20, fontWeight:600, marginBottom:16, color:"#1B1B1F", display:"block" },
-  divider:  { border:"none", borderTop:"1px solid #C4C6D0", margin:"12px 0" },
+  modalBox: { background:C.card, borderRadius:"28px 28px 0 0", padding:"28px 20px 40px", width:"100%", maxWidth:480, boxShadow:"0 -4px 16px rgba(0,0,0,.12)", animation:"slideUp .25s ease" },
+  mTitle:   { fontFamily:"'Roboto Slab',serif", fontSize:20, fontWeight:600, marginBottom:16, color:C.text, display:"block" },
+  divider:  { border:"none", borderTop:`1px solid ${C.outlineVar}`, margin:"12px 0" },
   answTag:  { display:"inline-block", background:"#DCFCE7", borderRadius:100, padding:"3px 10px", fontSize:12, fontWeight:700, color:"#2E7D52" },
   emojiGrid:{ display:"grid", gridTemplateColumns:"repeat(6,1fr)", gap:8, marginBottom:14 },
   errBox:   { background:"#F9DEDC", border:"1px solid #F1AEA8", borderRadius:12, padding:"12px 14px", fontSize:13, color:"#B3261E", marginBottom:10 },
-  tab:      { flex:1, padding:"10px 0", border:"none", background:"transparent", fontSize:14, fontWeight:500, cursor:"pointer", borderBottom:"2px solid transparent", color:"#44464F", fontFamily:"'Roboto',sans-serif", letterSpacing:".04em" },
-  tabAct:   { borderBottom:"2px solid #1565C0", color:"#1565C0", fontWeight:700 },
+  tab:      { flex:1, padding:"10px 0", border:"none", background:"transparent", fontSize:14, fontWeight:500, cursor:"pointer", borderBottom:"2px solid transparent", color:C.muted, fontFamily:"'Roboto',sans-serif", letterSpacing:".04em" },
+  tabAct:   { borderBottom:`2px solid ${C.primary}`, color:C.primary, fontWeight:700 },
 };
 
 const EMOJIS = ["🙏","✨","🌿","🕊️","💛","🌸","🌻","🦋","🌙","⭐","🫶","💫"];
@@ -243,7 +284,7 @@ function AuthScreen({ onAuth }) {
           <h1 style={{ fontFamily:"'Roboto Slab',serif", fontSize:26, color:C.text, fontWeight:700, marginTop:8 }}>PGM</h1>
           <p style={{ color:C.muted, fontSize:14, marginTop:4 }}>Pedidos de Oração</p>
         </div>
-        <div style={{ ...s.card, padding:"24px 20px 28px", borderRadius:16, boxShadow:"0 2px 8px rgba(0,0,0,.1)" }}>
+        <div style={{ ...s.card, background:C.card, padding:"24px 20px 28px", borderRadius:16, boxShadow:"0 2px 8px rgba(0,0,0,.1)", background:C.card }}>
           <div style={{ display:"flex", borderBottom:`1px solid ${C.border}`, marginBottom:20 }}>
             <button style={{ ...s.tab, ...(tab==="login"  ? s.tabAct : {}) }} onClick={() => { setTab("login");  setErr(""); }}>Entrar</button>
             <button style={{ ...s.tab, ...(tab==="signup" ? s.tabAct : {}) }} onClick={() => { setTab("signup"); setErr(""); }}>Cadastrar</button>
@@ -276,7 +317,7 @@ function AuthScreen({ onAuth }) {
             <span style={{ ...s.label, marginBottom:8 }}>Seu emoji no grupo</span>
             <div style={s.emojiGrid}>
               {EMOJIS.map(e => (
-                <button key={e} onClick={() => setEmoji(e)} style={{ fontSize:22, background:emoji===e?"#D6E4FF":C.blueLight, border:`2px solid ${emoji===e?C.blue:"transparent"}`, borderRadius:12, padding:"6px 0", cursor:"pointer" }}>{e}</button>
+                <button key={e} onClick={() => setEmoji(e)} style={{ fontSize:22, background:emoji===e?C.primCont:C.surfVar, border:`2px solid ${emoji===e?C.primary:"transparent"}`, borderRadius:12, padding:"6px 0", cursor:"pointer" }}>{e}</button>
               ))}
             </div>
             <input style={s.input} placeholder="Seu nome no grupo..." value={name} onChange={e => setName(e.target.value)}/>
@@ -339,7 +380,7 @@ function ProfileSetup({ session, onDone, onLogout }) {
           <span style={{ ...s.label, marginBottom:8 }}>Seu emoji</span>
           <div style={s.emojiGrid}>
             {EMOJIS.map(e => (
-              <button key={e} onClick={() => setEmoji(e)} style={{ fontSize:22, background:emoji===e?"#D6E4FF":C.blueLight, border:`2px solid ${emoji===e?C.blue:"transparent"}`, borderRadius:12, padding:"6px 0", cursor:"pointer" }}>{e}</button>
+              <button key={e} onClick={() => setEmoji(e)} style={{ fontSize:22, background:emoji===e?C.primCont:C.surfVar, border:`2px solid ${emoji===e?C.primary:"transparent"}`, borderRadius:12, padding:"6px 0", cursor:"pointer" }}>{e}</button>
             ))}
           </div>
           <input style={s.input} placeholder="Seu nome no grupo..." value={name}
@@ -356,7 +397,7 @@ function ProfileSetup({ session, onDone, onLogout }) {
 }
 
 // ── APP PRINCIPAL ────────────────────────────────────────────────────────────
-function AppMain({ session, onLogout }) {
+function AppMain({ session, onLogout, showTheme, setShowTheme }) {
   const { token, member: me } = session;
 
   const [activeTab,    setActiveTab]   = useState("prayers");
@@ -485,6 +526,7 @@ function AppMain({ session, onLogout }) {
             <span style={{ fontSize:13, fontWeight:600 }}>{me.name}</span>
             <button onClick={() => { setEditName(me.name); setEditEmoji(me.emoji); setModal("profile"); }}
               style={{ background:"transparent", border:"1px solid rgba(255,255,255,.3)", color:"#fff", opacity:.8, cursor:"pointer", fontSize:12, padding:"2px 8px", borderRadius:20, fontFamily:"inherit" }}>✏️</button>
+            <button onClick={() => setShowTheme(true)} style={{ background:"transparent", border:"1px solid rgba(255,255,255,.3)", color:"#fff", opacity:.8, cursor:"pointer", fontSize:14, padding:"2px 8px", borderRadius:20, fontFamily:"inherit" }}>🎨</button>
             <button onClick={onLogout} style={{ background:"transparent", border:"1px solid rgba(255,255,255,.3)", color:"#fff", opacity:.8, cursor:"pointer", fontSize:12, padding:"2px 8px", borderRadius:20, fontFamily:"inherit" }}>Sair</button>
           </div>
         )}
@@ -523,8 +565,8 @@ function AppMain({ session, onLogout }) {
             <button key={v} onClick={() => { setSection(v); setOnlyMine(false); }}
               style={{ flex:1, padding:"10px 0", border:"none", background:"transparent", cursor:"pointer",
                 fontFamily:"inherit", fontSize:14, fontWeight:700,
-                color: section===v ? C.blue : C.muted,
-                borderBottom: section===v ? `2.5px solid ${C.blue}` : "2.5px solid transparent",
+                color: section===v ? C.primary : C.muted,
+                borderBottom: section===v ? `2.5px solid ${C.primary}` : "2.5px solid transparent",
                 marginBottom:-1.5 }}>
               {l}
             </button>
@@ -535,7 +577,7 @@ function AppMain({ session, onLogout }) {
         <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:10 }}>
           {section === "active" ? (
             <button onClick={() => setOnlyMine(p => !p)}
-              style={{ ...s.ghost, ...(onlyMine ? { background:C.blueLight, borderColor:C.blue, color:C.text } : {}) }}>
+              style={{ ...s.ghost, ...(onlyMine ? { background:C.primCont, borderColor:C.primary, color:C.primary } : {}) }}>
               Meus pedidos
             </button>
           ) : <span/>}
@@ -569,7 +611,7 @@ function AppMain({ session, onLogout }) {
               <hr style={s.divider}/>
               <div style={{ display:"flex", alignItems:"center", gap:8, flexWrap:"wrap" }}>
                 <button onClick={() => togglePray(req.id)}
-                  style={{ ...s.ghost, ...(iPrayed ? { background:"#D6E4FF", borderColor:"#1565C0", color:"#001849" } : {}) }}>
+                  style={{ ...s.ghost, ...(iPrayed ? { background:C.primCont, borderColor:C.primary, color:C.onPrimCont } : {}) }}>
                   🙏 {iPrayed ? "Orei por isso" : "Orar por isso"}
                 </button>
                 {reqI.length>0 && (
@@ -607,12 +649,12 @@ function AppMain({ session, onLogout }) {
       {activeTab === "meetings" && <MeetingsTab session={session} members={members}/>}
 
       {/* Bottom nav */}
-      <div style={{ position:"fixed", bottom:0, left:0, right:0, background:"#FFFFFF", borderTop:"1px solid #C4C6D0", display:"flex", zIndex:20, boxShadow:"0 -2px 12px rgba(26,53,80,.08)" }}>
+      <div style={{ position:"fixed", bottom:0, left:0, right:0, background:C.card, borderTop:`1px solid ${C.outlineVar}`, display:"flex", zIndex:20, boxShadow:"0 -2px 12px rgba(26,53,80,.08)" }}>
         {[["prayers","🙏","Orações"],["meetings","📅","Reuniões"]].map(([tab,icon,label]) => (
           <button key={tab} onClick={() => setActiveTab(tab)}
             style={{ flex:1, padding:"12px 0 10px", border:"none", background:"transparent", cursor:"pointer",
-              color: activeTab===tab ? "#1565C0" : "#44464F",
-              borderTop: activeTab===tab ? "2.5px solid #1565C0" : "2.5px solid transparent",
+              color: activeTab===tab ? C.primary : C.muted,
+              borderTop: activeTab===tab ? `2.5px solid ${C.primary}` : "2.5px solid transparent",
               fontSize:11, fontWeight:700, letterSpacing:".06em", fontFamily:"'Roboto',sans-serif",
               display:"flex", flexDirection:"column", alignItems:"center", gap:3 }}>
             <span style={{ fontSize:20 }}>{icon}</span>
@@ -637,6 +679,8 @@ function AppMain({ session, onLogout }) {
         </div>
       )}
 
+      {showTheme && <ThemeSettings onClose={() => setShowTheme(false)}/>}
+
       {modal==="profile" && (
         <div style={s.modal} onClick={e => e.target===e.currentTarget && setModal(null)}>
           <div style={s.modalBox}>
@@ -645,8 +689,8 @@ function AppMain({ session, onLogout }) {
             <div style={s.emojiGrid}>
               {["🙏","✨","🌿","🕊️","💛","🌸","🌻","🦋","🌙","⭐","🫶","💫"].map(e => (
                 <button key={e} onClick={() => setEditEmoji(e)} style={{
-                  fontSize:22, background:editEmoji===e?"#D6E4FF":C.blueLight,
-                  border:`2px solid ${editEmoji===e?C.blue:"transparent"}`,
+                  fontSize:22, background:editEmoji===e?C.primCont:C.surfVar,
+                  border:`2px solid ${editEmoji===e?C.primary:"transparent"}`,
                   borderRadius:12, padding:"6px 0", cursor:"pointer"
                 }}>{e}</button>
               ))}
@@ -753,14 +797,14 @@ function RequestUpdates({ requestId, isOwner, me, token, members }) {
   return (
     <div style={{ marginTop:8 }}>
       <button onClick={toggle} style={{ background:"transparent", border:"none", cursor:"pointer",
-        fontSize:13, color:C.blue, fontWeight:600, padding:0, fontFamily:"inherit",
+        fontSize:13, color:C.primary, fontWeight:600, padding:0, fontFamily:"inherit",
         display:"flex", alignItems:"center", gap:5 }}>
         <span>📝 Atualizações{count !== null ? ` (${count})` : ""}</span>
         <span style={{ fontSize:11 }}>{open ? "▲" : "▼"}</span>
       </button>
 
       {open && (
-        <div style={{ marginTop:8, borderLeft:"3px solid #C4C6D0", paddingLeft:12 }}>
+        <div style={{ marginTop:8, borderLeft:`3px solid ${C.outlineVar}`, paddingLeft:12 }}>
           {(updates||[]).length === 0 && (
             <p style={{ fontSize:13, color:C.muted, fontStyle:"italic", marginBottom:8 }}>Nenhuma atualização ainda.</p>
           )}
@@ -918,13 +962,13 @@ function MeetingsTab({ session, members }) {
           const isToday    = m.date === today;
 
           return (
-            <div key={m.id} className="fade" style={{ ...s.card, ...(isToday ? { borderColor:C.blue, borderWidth:2 } : {}) }}>
+            <div key={m.id} className="fade" style={{ ...s.card, ...(isToday ? { borderColor:C.primary, borderWidth:2 } : {}) }}>
               <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", gap:8 }}>
                 <div style={{ flex:1 }}>
                   <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:4, flexWrap:"wrap" }}>
                     <span style={{ fontWeight:700, fontSize:16, fontFamily:"'Roboto Slab',serif" }}>Reunião PGM</span>
                     {isToday && (
-                      <span style={{ background:"#1565C0", color:"#FFFFFF", fontSize:11, fontWeight:700, borderRadius:20, padding:"2px 9px", letterSpacing:".04em" }}>HOJE</span>
+                      <span style={{ background:C.primary, color:C.onPrimary, fontSize:11, fontWeight:700, borderRadius:20, padding:"2px 9px", letterSpacing:".04em" }}>HOJE</span>
                     )}
                   </div>
                   <div style={{ fontSize:13, color:C.muted, lineHeight:1.8 }}>
@@ -944,7 +988,7 @@ function MeetingsTab({ session, members }) {
 
               <div style={{ display:"flex", alignItems:"center", gap:8, flexWrap:"wrap" }}>
                 <button onClick={() => toggleConfirm(m.id)}
-                  style={{ ...s.ghost, ...(iConfirmed ? { background:"#D6E4FF", borderColor:"#1565C0", color:"#001849" } : {}) }}>
+                  style={{ ...s.ghost, ...(iConfirmed ? { background:C.primCont, borderColor:C.primary, color:C.onPrimCont } : {}) }}>
                   ✅ {iConfirmed ? "Confirmei presença" : "Confirmar presença"}
                 </button>
                 {mtConfirms.length > 0 && (
@@ -988,12 +1032,67 @@ function MeetingsTab({ session, members }) {
   );
 }
 
+
+// ── CONFIGURAÇÕES DE TEMA ─────────────────────────────────────────────────────
+function ThemeSettings({ onClose }) {
+  const saved = (() => { try { return JSON.parse(localStorage.getItem("pgm_theme")||"{}"); } catch{} return {}; })();
+  const [selColor, setSelColor] = useState(saved.primary || "#1565C0");
+  const [dark,     setDark]     = useState(saved.dark    || false);
+
+  function apply(primary, isDark) {
+    setSelColor(primary); setDark(isDark);
+    applyTheme(primary, isDark);
+    try { localStorage.setItem("pgm_theme", JSON.stringify({ primary, dark: isDark })); } catch {}
+  }
+
+  return (
+    <div style={s.modal} onClick={e => e.target===e.currentTarget && onClose()}>
+      <div style={s.modalBox}>
+        <span style={s.mTitle}>🎨 Aparência</span>
+
+        <span style={{ ...s.label, marginBottom:12 }}>Cor principal</span>
+        <div style={{ display:"flex", flexWrap:"wrap", gap:10, marginBottom:20 }}>
+          {THEME_PRESETS.map(t => (
+            <button key={t.p} onClick={() => apply(t.p, dark)}
+              title={t.name}
+              style={{ width:40, height:40, borderRadius:"50%", background:t.p, cursor:"pointer",
+                border: selColor===t.p ? "3px solid var(--ct)" : "3px solid transparent",
+                boxShadow: selColor===t.p ? "0 0 0 2px "+t.p : "0 1px 3px rgba(0,0,0,.2)",
+                transition:"all .15s" }}>
+            </button>
+          ))}
+        </div>
+
+        <span style={{ ...s.label, marginBottom:12 }}>Modo</span>
+        <div style={{ display:"flex", gap:8, marginBottom:24 }}>
+          {[[false,"☀️  Claro"],[true,"🌙  Escuro"]].map(([d,l]) => (
+            <button key={String(d)} onClick={() => apply(selColor, d)}
+              style={{ ...s.ghost, flex:1, textAlign:"center",
+                ...(dark===d ? { background:C.primCont, borderColor:C.primary, color:C.primary, fontWeight:700 } : {}) }}>
+              {l}
+            </button>
+          ))}
+        </div>
+
+        <button style={s.btn} onClick={onClose}>Fechar</button>
+      </div>
+    </div>
+  );
+}
+
 // ── ROOT ─────────────────────────────────────────────────────────────────────
 function App() {
-  const [session, setSession] = useState(null);
+  const [session,   setSession]   = useState(null);
+  const [showTheme, setShowTheme] = useState(false);
   const [booting, setBooting] = useState(true);
 
   useEffect(() => {
+    // Restaurar tema salvo
+    try {
+      const t = JSON.parse(localStorage.getItem("pgm_theme")||"{}");
+      if (t.primary) applyTheme(t.primary, t.dark||false);
+    } catch {}
+    // Restaurar sessão
     try {
       const saved = localStorage.getItem("pgm_session");
       if (saved) setSession(JSON.parse(saved));
@@ -1027,7 +1126,7 @@ function App() {
   // Logado mas sem perfil: pede para completar
   if (!session.member) return <ProfileSetup session={session} onDone={handleProfileDone} onLogout={handleLogout}/>;
 
-  return <AppMain session={session} onLogout={handleLogout}/>;
+  return <AppMain session={session} onLogout={handleLogout} showTheme={showTheme} setShowTheme={setShowTheme}/>;
 }
 
 ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
